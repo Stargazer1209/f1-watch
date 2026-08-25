@@ -57,12 +57,50 @@ import com.f1watch.ui.theme.PodiumGold
 import com.f1watch.ui.theme.PodiumSilver
 import com.f1watch.ui.theme.TeamColors
 
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
+
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun ResultsScreen(
     viewModel: ResultsViewModel
 ) {
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val tabLazyListState = rememberLazyListState()
+
+    val pagerState = rememberPagerState(
+        initialPage = 0,
+        pageCount = { state.races.size }
+    )
+
+    // Sync selectedRound -> Pager and Tab scroll
+    LaunchedEffect(state.selectedRound, state.races) {
+        if (state.races.isNotEmpty()) {
+            val targetIndex = state.races.indexOfFirst { it.round == state.selectedRound }
+            if (targetIndex >= 0) {
+                if (pagerState.currentPage != targetIndex) {
+                    pagerState.scrollToPage(targetIndex)
+                }
+                tabLazyListState.animateScrollToItem(maxOf(0, targetIndex - 2))
+            }
+        }
+    }
+
+    // Sync Pager swipe -> ViewModel selectedRound & Tab scroll
+    LaunchedEffect(pagerState.currentPage) {
+        if (state.races.isNotEmpty() && pagerState.currentPage in state.races.indices) {
+            val swipedRound = state.races[pagerState.currentPage].round
+            if (swipedRound != state.selectedRound) {
+                viewModel.selectRound(swipedRound)
+                tabLazyListState.animateScrollToItem(maxOf(0, pagerState.currentPage - 2))
+            }
+        }
+    }
 
     LaunchedEffect(state.toastMessage) {
         state.toastMessage?.let {
@@ -78,6 +116,7 @@ fun ResultsScreen(
     ) {
         // Round Selector
         LazyRow(
+            state = tabLazyListState,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 10.dp, horizontal = 12.dp),
@@ -95,7 +134,13 @@ fun ResultsScreen(
                             if (isSelected) F1Red else F1CardBorder,
                             RoundedCornerShape(20.dp)
                         )
-                        .clickable { viewModel.selectRound(race.round) }
+                        .clickable {
+                            val idx = state.races.indexOfFirst { it.round == race.round }
+                            if (idx >= 0) {
+                                scope.launch { pagerState.animateScrollToPage(idx) }
+                            }
+                            viewModel.selectRound(race.round)
+                        }
                         .padding(horizontal = 12.dp, vertical = 6.dp)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -112,122 +157,131 @@ fun ResultsScreen(
             }
         }
 
-        val currentRace = state.races.firstOrNull { it.round == state.selectedRound }
-        currentRace?.let { race ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "${race.circuit.flagEmoji} ${com.f1watch.util.F1Localization.getRaceName(race.raceName)}",
-                        fontWeight = FontWeight.Black,
-                        color = F1TextWhite,
-                        fontSize = 18.sp
-                    )
-                    Text(
-                        text = "📍 ${com.f1watch.util.F1Localization.getCircuitName(race.circuit.circuitName)} · ${race.date}",
-                        color = F1TextSecondary,
-                        fontSize = 12.sp
-                    )
-                }
+        if (state.races.isNotEmpty()) {
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize()
+            ) { page ->
+                val currentRace = state.races.getOrNull(page)
+                Column(modifier = Modifier.fillMaxSize()) {
+                    currentRace?.let { race ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "${race.circuit.flagEmoji} ${com.f1watch.util.F1Localization.getRaceName(race.raceName)}",
+                                    fontWeight = FontWeight.Black,
+                                    color = F1TextWhite,
+                                    fontSize = 18.sp
+                                )
+                                Text(
+                                    text = "📍 ${com.f1watch.util.F1Localization.getCircuitName(race.circuit.circuitName)} · ${race.date}",
+                                    color = F1TextSecondary,
+                                    fontSize = 12.sp
+                                )
+                            }
 
-                IconButton(
-                    onClick = { viewModel.refreshCurrentRound() },
-                    enabled = !state.isRefreshing,
-                    modifier = Modifier.size(32.dp)
-                ) {
-                    if (state.isRefreshing) {
-                        CircularProgressIndicator(
-                            color = F1Red,
-                            strokeWidth = 2.dp,
-                            modifier = Modifier.size(18.dp)
-                        )
+                            IconButton(
+                                onClick = { viewModel.refreshCurrentRound() },
+                                enabled = !state.isRefreshing,
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                if (state.isRefreshing) {
+                                    CircularProgressIndicator(
+                                        color = F1Red,
+                                        strokeWidth = 2.dp,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                } else {
+                                    Icon(
+                                        imageVector = Icons.Default.Refresh,
+                                        contentDescription = "刷新本站成绩",
+                                        tint = F1TextSecondary
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    if (state.isLoading) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = F1Red)
+                        }
+                    } else if (state.results.isEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(32.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(
+                                    imageVector = Icons.Default.EmojiEvents,
+                                    contentDescription = null,
+                                    tint = F1TextMuted,
+                                    modifier = Modifier.size(56.dp)
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Text(
+                                    text = "本站比赛暂无完赛数据",
+                                    color = F1TextSecondary,
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "比赛结束后将通过官方 API 自动同步完赛成绩",
+                                    color = F1TextMuted,
+                                    fontSize = 12.sp,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
                     } else {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = "刷新本站成绩",
-                            tint = F1TextSecondary
-                        )
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 16.dp)
+                        ) {
+                            // Podium Section if results >= 3
+                            if (state.results.size >= 3) {
+                                item {
+                                    PodiumSection(
+                                        p1 = state.results[0],
+                                        p2 = state.results[1],
+                                        p3 = state.results[2]
+                                    )
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                }
+                            }
+
+                            item {
+                                Text(
+                                    text = "全场完赛成绩榜",
+                                    fontWeight = FontWeight.Bold,
+                                    color = F1TextWhite,
+                                    fontSize = 15.sp,
+                                    modifier = Modifier.padding(bottom = 8.dp)
+                                )
+                            }
+
+                            items(state.results) { result ->
+                                ResultRowItem(result = result)
+                                Spacer(modifier = Modifier.height(6.dp))
+                            }
+
+                            item {
+                                Spacer(modifier = Modifier.height(32.dp))
+                            }
+                        }
                     }
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        if (state.isLoading) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = F1Red)
-            }
-        } else if (state.results.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(32.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        imageVector = Icons.Default.EmojiEvents,
-                        contentDescription = null,
-                        tint = F1TextMuted,
-                        modifier = Modifier.size(56.dp)
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = "本站比赛暂无完赛数据",
-                        color = F1TextSecondary,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "比赛结束后将通过官方 API 自动同步完赛成绩",
-                        color = F1TextMuted,
-                        fontSize = 12.sp,
-                        textAlign = TextAlign.Center
-                    )
-                }
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 16.dp)
-            ) {
-                // Podium Section if results >= 3
-                if (state.results.size >= 3) {
-                    item {
-                        PodiumSection(
-                            p1 = state.results[0],
-                            p2 = state.results[1],
-                            p3 = state.results[2]
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                    }
-                }
-
-                item {
-                    Text(
-                        text = "全场完赛成绩榜",
-                        fontWeight = FontWeight.Bold,
-                        color = F1TextWhite,
-                        fontSize = 15.sp,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                }
-
-                items(state.results) { result ->
-                    ResultRowItem(result = result)
-                    Spacer(modifier = Modifier.height(6.dp))
-                }
-
-                item {
-                    Spacer(modifier = Modifier.height(32.dp))
                 }
             }
         }

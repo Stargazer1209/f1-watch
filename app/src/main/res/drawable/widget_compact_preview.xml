@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="200dp"
+    android:height="200dp"
+    android:viewportWidth="200"
+    android:viewportHeight="200">
+
+    <!-- Card Background -->
+    <path
+        android:fillColor="#15151E"
+        android:pathData="M 24,0 H 176 A 24,24 0 0 1 200,24 V 176 A 24,24 0 0 1 176,200 H 24 A 24,24 0 0 1 0,176 V 24 A 24,24 0 0 1 24,0 Z" />
+
+    <!-- Red Accent Top Bar -->
+    <path
+        android:fillColor="#E10600"
+        android:pathData="M 20,24 H 70 V 30 H 20 Z" />
+
+    <!-- Title Bar Mock -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M 20,44 H 140 V 56 H 20 Z" />
+
+    <path
+        android:fillColor="#A0A0B2"
+        android:pathData="M 20,68 H 90 V 78 H 20 Z" />
+
+    <!-- Big Countdown Focus Mock -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M 20,95 H 170 V 122 H 20 Z" />
+
+    <!-- Next Session Pill -->
+    <path
+        android:fillColor="#E10600"
+        android:pathData="M 26,145 H 160 A 8,8 0 0 1 168,153 V 162 A 8,8 0 0 1 160,170 H 26 A 8,8 0 0 1 18,162 V 153 A 8,8 0 0 1 26,145 Z" />
+</vector>

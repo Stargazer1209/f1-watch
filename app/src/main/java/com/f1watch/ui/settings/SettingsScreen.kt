@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -71,7 +73,11 @@ import com.f1watch.ui.theme.F1TextWhite
 import com.f1watch.ui.theme.TeamColors
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(
+    ExperimentalMaterial3Api::class,
+    ExperimentalLayoutApi::class,
+    androidx.compose.foundation.ExperimentalFoundationApi::class
+)
 @Composable
 fun SettingsScreen(
     preferencesManager: PreferencesManager,
@@ -84,7 +90,7 @@ fun SettingsScreen(
     val scrollState = rememberScrollState()
 
     val currentTheme by preferencesManager.widgetThemeFlow.collectAsState(initial = "ferrari")
-    var selectedPreviewTab by remember { mutableIntStateOf(0) } // 0: 2x2, 1: 2x4
+    val previewPagerState = rememberPagerState(pageCount = { 2 }) // 0: 2x2, 1: 2x4
 
     val teamThemes = listOf(
         Pair("f1_red", "F1 官方红"),
@@ -149,25 +155,25 @@ fun SettingsScreen(
             ) {
                 Column(modifier = Modifier.padding(14.dp)) {
                     TabRow(
-                        selectedTabIndex = selectedPreviewTab,
+                        selectedTabIndex = previewPagerState.currentPage,
                         containerColor = F1CardBg,
                         contentColor = F1TextWhite,
                         indicator = { tabPositions ->
                             TabRowDefaults.SecondaryIndicator(
-                                modifier = Modifier.tabIndicatorOffset(tabPositions[selectedPreviewTab]),
+                                modifier = Modifier.tabIndicatorOffset(tabPositions[previewPagerState.currentPage]),
                                 color = F1Red,
                                 height = 2.dp
                             )
                         }
                     ) {
                         Tab(
-                            selected = selectedPreviewTab == 0,
-                            onClick = { selectedPreviewTab = 0 },
+                            selected = previewPagerState.currentPage == 0,
+                            onClick = { scope.launch { previewPagerState.animateScrollToPage(0) } },
                             text = { Text("2×2 紧凑卡片预览", fontSize = 12.sp) }
                         )
                         Tab(
-                            selected = selectedPreviewTab == 1,
-                            onClick = { selectedPreviewTab = 1 },
+                            selected = previewPagerState.currentPage == 1,
+                            onClick = { scope.launch { previewPagerState.animateScrollToPage(1) } },
                             text = { Text("2×4 周末赛程预览", fontSize = 12.sp) }
                         )
                     }
@@ -184,165 +190,168 @@ fun SettingsScreen(
                     )
                     val countdown = CountdownCalculator.calculate(activeRace)
 
-                    if (selectedPreviewTab == 0) {
-                        // 2x2 Mini Square Preview (1:1 Ratio, Centered)
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
+                    HorizontalPager(
+                        state = previewPagerState,
+                        modifier = Modifier.fillMaxWidth()
+                    ) { page ->
+                        if (page == 0) {
+                            // 2x2 Mini Square Preview (1:1 Ratio, Centered, No Border to align with desktop widget)
                             Box(
                                 modifier = Modifier
-                                    .size(156.dp)
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .background(Color(0xFF15151E))
-                                    .border(1.5.dp, selectedColor, RoundedCornerShape(16.dp))
-                                    .padding(12.dp)
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                contentAlignment = Alignment.Center
                             ) {
-                                Column(
-                                    modifier = Modifier.fillMaxSize(),
-                                    verticalArrangement = Arrangement.SpaceBetween,
-                                    horizontalAlignment = Alignment.Start
+                                Box(
+                                    modifier = Modifier
+                                        .size(156.dp)
+                                        .clip(RoundedCornerShape(16.dp))
+                                        .background(Color(0xFF15151E))
+                                        .padding(12.dp)
                                 ) {
-                                    // Header: Flag + Round + Country
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        verticalAlignment = Alignment.CenterVertically
+                                    Column(
+                                        modifier = Modifier.fillMaxSize(),
+                                        verticalArrangement = Arrangement.SpaceBetween,
+                                        horizontalAlignment = Alignment.Start
                                     ) {
+                                        // Header: Flag + Round + Country
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = activeRace.circuit.flagEmoji,
+                                                fontSize = 16.sp
+                                            )
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(
+                                                text = "R${activeRace.round} · ${com.f1watch.util.F1Localization.getCountry(activeRace.circuit.country)}",
+                                                color = selectedColor,
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 11.sp,
+                                                maxLines = 1
+                                            )
+                                        }
+
+                                        // Race Name
                                         Text(
-                                            text = activeRace.circuit.flagEmoji,
-                                            fontSize = 16.sp
-                                        )
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text(
-                                            text = "R${activeRace.round} · ${com.f1watch.util.F1Localization.getCountry(activeRace.circuit.country)}",
-                                            color = selectedColor,
+                                            text = com.f1watch.util.F1Localization.getRaceName(activeRace.raceName),
                                             fontWeight = FontWeight.Bold,
-                                            fontSize = 11.sp,
+                                            color = Color.White,
+                                            fontSize = 13.sp,
+                                            maxLines = 1
+                                        )
+
+                                        // Countdown Focus
+                                        Column {
+                                            Text(
+                                                text = if (countdown.isLive) "LIVE 正在进行" else "正赛倒计时",
+                                                color = Color(0xFFA0A0B2),
+                                                fontSize = 10.sp,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                            Spacer(modifier = Modifier.height(1.dp))
+                                            Text(
+                                                text = countdown.formattedCompact,
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (countdown.isLive) Color(0xFF00D26A) else Color.White,
+                                                fontSize = 15.sp
+                                            )
+                                        }
+
+                                        // Next Session Footer
+                                        Text(
+                                            text = if (countdown.isLive) countdown.targetSessionName else "下一阶段: ${countdown.targetSessionName}",
+                                            color = selectedColor,
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Medium,
                                             maxLines = 1
                                         )
                                     }
-
-                                    // Race Name
-                                    Text(
-                                        text = com.f1watch.util.F1Localization.getRaceName(activeRace.raceName),
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color.White,
-                                        fontSize = 13.sp,
-                                        maxLines = 1
-                                    )
-
-                                    // Countdown Focus
-                                    Column {
-                                        Text(
-                                            text = if (countdown.isLive) "LIVE 正在进行" else "正赛倒计时",
-                                            color = Color(0xFFA0A0B2),
-                                            fontSize = 10.sp,
-                                            fontWeight = FontWeight.Medium
-                                        )
-                                        Spacer(modifier = Modifier.height(1.dp))
-                                        Text(
-                                            text = countdown.formattedCompact,
-                                            fontWeight = FontWeight.Bold,
-                                            color = if (countdown.isLive) Color(0xFF00D26A) else Color.White,
-                                            fontSize = 15.sp
-                                        )
-                                    }
-
-                                    // Next Session Footer
-                                    Text(
-                                        text = if (countdown.isLive) countdown.targetSessionName else "下一阶段: ${countdown.targetSessionName}",
-                                        color = selectedColor,
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Medium,
-                                        maxLines = 1
-                                    )
                                 }
                             }
-                        }
-                    } else {
-                        // 2x4 Full Weekend Preview with Track Map
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(155.dp)
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(F1Dark)
-                                .border(1.5.dp, selectedColor, RoundedCornerShape(16.dp))
-                                .padding(12.dp)
-                        ) {
-                            Column(modifier = Modifier.fillMaxSize()) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = "${activeRace.circuit.flagEmoji} R${activeRace.round} · ${com.f1watch.util.F1Localization.getRaceName(activeRace.raceName)}",
-                                        fontWeight = FontWeight.Black,
-                                        color = Color.White,
-                                        fontSize = 12.sp,
-                                        maxLines = 1
-                                    )
-                                    Box(
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(6.dp))
-                                            .background(selectedColor)
-                                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                        } else {
+                            // 2x4 Full Weekend Preview with Track Map (No Border to align with desktop widget)
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(155.dp)
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(Color(0xFF15151E))
+                                    .padding(12.dp)
+                            ) {
+                                Column(modifier = Modifier.fillMaxSize()) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text(text = countdown.formattedCompact, fontWeight = FontWeight.Bold, color = Color.White, fontSize = 10.sp)
-                                    }
-                                }
-
-                                Spacer(modifier = Modifier.height(6.dp))
-
-                                Row(modifier = Modifier.fillMaxWidth().weight(1f), verticalAlignment = Alignment.CenterVertically) {
-                                    // Left: Track map outline
-                                    Box(
-                                        modifier = Modifier
-                                            .width(96.dp)
-                                            .fillMaxSize()
-                                            .clip(RoundedCornerShape(10.dp))
-                                            .background(Color(0xFF0D0D12))
-                                            .padding(4.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        coil.compose.AsyncImage(
-                                            model = com.f1watch.ui.util.F1MediaHelper.getCircuitMapUrl(activeRace.circuit.circuitId),
-                                            contentDescription = "Track Map",
-                                            modifier = Modifier.fillMaxSize(),
-                                            contentScale = androidx.compose.ui.layout.ContentScale.Fit
+                                        Text(
+                                            text = "${activeRace.circuit.flagEmoji} R${activeRace.round} · ${com.f1watch.util.F1Localization.getRaceName(activeRace.raceName)}",
+                                            fontWeight = FontWeight.Black,
+                                            color = Color.White,
+                                            fontSize = 12.sp,
+                                            maxLines = 1
                                         )
+                                        Box(
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(6.dp))
+                                                .background(selectedColor)
+                                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                                        ) {
+                                            Text(text = countdown.formattedCompact, fontWeight = FontWeight.Bold, color = Color.White, fontSize = 10.sp)
+                                        }
                                     }
 
-                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Spacer(modifier = Modifier.height(6.dp))
 
-                                    // Right: Sessions list
-                                    Column(
-                                        modifier = Modifier.weight(1f).fillMaxSize(),
-                                        verticalArrangement = Arrangement.SpaceEvenly
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(4.dp)).background(F1CardSurface).padding(horizontal = 6.dp, vertical = 2.dp),
-                                            horizontalArrangement = Arrangement.SpaceBetween
+                                    Row(modifier = Modifier.fillMaxWidth().weight(1f), verticalAlignment = Alignment.CenterVertically) {
+                                        // Left: Track map outline
+                                        Box(
+                                            modifier = Modifier
+                                                .width(96.dp)
+                                                .fillMaxSize()
+                                                .clip(RoundedCornerShape(10.dp))
+                                                .background(Color(0xFF0D0D12))
+                                                .padding(4.dp),
+                                            contentAlignment = Alignment.Center
                                         ) {
-                                            Text("一练 FP1", color = F1TextSecondary, fontSize = 10.sp)
-                                            Text("周五 19:30", color = Color.White, fontSize = 10.sp)
+                                            coil.compose.AsyncImage(
+                                                model = com.f1watch.ui.util.F1MediaHelper.getCircuitMapUrl(activeRace.circuit.circuitId),
+                                                contentDescription = "Track Map",
+                                                modifier = Modifier.fillMaxSize(),
+                                                contentScale = androidx.compose.ui.layout.ContentScale.Fit
+                                            )
                                         }
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(4.dp)).background(F1CardSurface).padding(horizontal = 6.dp, vertical = 2.dp),
-                                            horizontalArrangement = Arrangement.SpaceBetween
+
+                                        Spacer(modifier = Modifier.width(8.dp))
+
+                                        // Right: Sessions list
+                                        Column(
+                                            modifier = Modifier.weight(1f).fillMaxSize(),
+                                            verticalArrangement = Arrangement.SpaceEvenly
                                         ) {
-                                            Text("排位 QUAL", color = F1TextSecondary, fontSize = 10.sp)
-                                            Text("周六 22:00", color = Color.White, fontSize = 10.sp)
-                                        }
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(4.dp)).background(selectedColor.copy(alpha = 0.25f)).padding(horizontal = 6.dp, vertical = 2.dp),
-                                            horizontalArrangement = Arrangement.SpaceBetween
-                                        ) {
-                                            Text("正赛 RACE", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 10.sp)
-                                            Text("周日 21:00", color = selectedColor, fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(4.dp)).background(F1CardSurface).padding(horizontal = 6.dp, vertical = 2.dp),
+                                                horizontalArrangement = Arrangement.SpaceBetween
+                                            ) {
+                                                Text("一练 FP1", color = F1TextSecondary, fontSize = 10.sp)
+                                                Text("周五 19:30", color = Color.White, fontSize = 10.sp)
+                                            }
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(4.dp)).background(F1CardSurface).padding(horizontal = 6.dp, vertical = 2.dp),
+                                                horizontalArrangement = Arrangement.SpaceBetween
+                                            ) {
+                                                Text("排位 QUAL", color = F1TextSecondary, fontSize = 10.sp)
+                                                Text("周六 22:00", color = Color.White, fontSize = 10.sp)
+                                            }
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(4.dp)).background(selectedColor.copy(alpha = 0.25f)).padding(horizontal = 6.dp, vertical = 2.dp),
+                                                horizontalArrangement = Arrangement.SpaceBetween
+                                            ) {
+                                                Text("正赛 RACE", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                                                Text("周日 21:00", color = selectedColor, fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                                            }
                                         }
                                     }
                                 }
@@ -379,6 +388,8 @@ fun SettingsScreen(
                             .clickable {
                                 scope.launch {
                                     preferencesManager.setWidgetTheme(key)
+                                    com.f1watch.widget.F1CompactWidgetReceiver.updateAll(context)
+                                    com.f1watch.widget.F1ScheduleWidgetReceiver.updateAll(context)
                                 }
                             }
                             .padding(horizontal = 10.dp, vertical = 6.dp)

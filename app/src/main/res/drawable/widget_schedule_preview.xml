@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="360dp"
+    android:height="180dp"
+    android:viewportWidth="360"
+    android:viewportHeight="180">
+
+    <!-- Card Background -->
+    <path
+        android:fillColor="#15151E"
+        android:pathData="M 24,0 H 336 A 24,24 0 0 1 360,24 V 156 A 24,24 0 0 1 336,180 H 24 A 24,24 0 0 1 0,156 V 24 A 24,24 0 0 1 24,0 Z" />
+
+    <!-- Top Header: Round + GP Name + Pill -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M 20,20 H 180 V 32 H 20 Z" />
+
+    <path
+        android:fillColor="#E10600"
+        android:pathData="M 285,16 H 340 A 6,6 0 0 1 346,22 V 30 A 6,6 0 0 1 340,36 H 285 A 6,6 0 0 1 279,30 V 22 A 6,6 0 0 1 285,16 Z" />
+
+    <!-- Left Box: Track Showcase Stand -->
+    <path
+        android:fillColor="#0D0D12"
+        android:pathData="M 30,48 H 125 A 10,10 0 0 1 135,58 V 150 A 10,10 0 0 1 125,160 H 30 A 10,10 0 0 1 20,150 V 58 A 10,10 0 0 1 30,48 Z" />
+
+    <!-- Circuit Track Outline Vector Mock -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3"
+        android:fillColor="#00000000"
+        android:pathData="M 45,75 L 110,75 L 115,95 L 90,125 L 50,135 L 45,100 Z" />
+
+    <!-- Right Side: Sessions Stack Mock -->
+    <!-- FP1 -->
+    <path
+        android:fillColor="#22222E"
+        android:pathData="M 155,48 H 335 A 6,6 0 0 1 341,54 V 68 A 6,6 0 0 1 335,74 H 155 A 6,6 0 0 1 149,68 V 54 A 6,6 0 0 1 155,48 Z" />
+    <path
+        android:fillColor="#888899"
+        android:pathData="M 160,58 H 220 V 64 H 160 Z" />
+
+    <!-- QUAL -->
+    <path
+        android:fillColor="#22222E"
+        android:pathData="M 155,78 H 335 A 6,6 0 0 1 341,84 V 98 A 6,6 0 0 1 335,104 H 155 A 6,6 0 0 1 149,98 V 84 A 6,6 0 0 1 155,78 Z" />
+    <path
+        android:fillColor="#888899"
+        android:pathData="M 160,88 H 220 V 94 H 160 Z" />
+
+    <!-- RACE -->
+    <path
+        android:fillColor="#E10600"
+        android:fillAlpha="0.3"
+        android:pathData="M 155,108 H 335 A 6,6 0 0 1 341,114 V 128 A 6,6 0 0 1 335,134 H 155 A 6,6 0 0 1 149,128 V 114 A 6,6 0 0 1 155,108 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M 160,118 H 230 V 124 H 160 Z" />
+</vector>

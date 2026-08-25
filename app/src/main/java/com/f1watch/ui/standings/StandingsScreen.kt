@@ -55,12 +55,22 @@ import com.f1watch.ui.theme.PodiumBronze
 import com.f1watch.ui.theme.PodiumGold
 import com.f1watch.ui.theme.PodiumSilver
 import com.f1watch.ui.theme.TeamColors
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun StandingsScreen(
     viewModel: StandingsViewModel
 ) {
     val state by viewModel.uiState.collectAsState()
+    val scope = rememberCoroutineScope()
+    val pagerState = rememberPagerState(
+        initialPage = 0,
+        pageCount = { 2 }
+    )
 
     val context = androidx.compose.ui.platform.LocalContext.current
 
@@ -78,38 +88,38 @@ fun StandingsScreen(
     ) {
         // Tab Row
         TabRow(
-            selectedTabIndex = state.selectedTab,
+            selectedTabIndex = pagerState.currentPage,
             containerColor = F1Dark,
             contentColor = F1TextWhite,
             indicator = { tabPositions ->
                 TabRowDefaults.SecondaryIndicator(
-                    modifier = Modifier.tabIndicatorOffset(tabPositions[state.selectedTab]),
+                    modifier = Modifier.tabIndicatorOffset(tabPositions[pagerState.currentPage]),
                     color = F1Red,
                     height = 3.dp
                 )
             }
         ) {
             Tab(
-                selected = state.selectedTab == 0,
-                onClick = { viewModel.selectTab(0) },
+                selected = pagerState.currentPage == 0,
+                onClick = { scope.launch { pagerState.animateScrollToPage(0) } },
                 text = {
                     Text(
                         text = "车手积分榜",
-                        fontWeight = if (state.selectedTab == 0) FontWeight.Black else FontWeight.Normal,
+                        fontWeight = if (pagerState.currentPage == 0) FontWeight.Black else FontWeight.Normal,
                         fontSize = 14.sp,
-                        color = if (state.selectedTab == 0) F1TextWhite else F1TextMuted
+                        color = if (pagerState.currentPage == 0) F1TextWhite else F1TextMuted
                     )
                 }
             )
             Tab(
-                selected = state.selectedTab == 1,
-                onClick = { viewModel.selectTab(1) },
+                selected = pagerState.currentPage == 1,
+                onClick = { scope.launch { pagerState.animateScrollToPage(1) } },
                 text = {
                     Text(
                         text = "车队积分榜",
-                        fontWeight = if (state.selectedTab == 1) FontWeight.Black else FontWeight.Normal,
+                        fontWeight = if (pagerState.currentPage == 1) FontWeight.Black else FontWeight.Normal,
                         fontSize = 14.sp,
-                        color = if (state.selectedTab == 1) F1TextWhite else F1TextMuted
+                        color = if (pagerState.currentPage == 1) F1TextWhite else F1TextMuted
                     )
                 }
             )
@@ -123,7 +133,7 @@ fun StandingsScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = if (state.selectedTab == 0) "2026 车手世界冠军积分排名" else "2026 车队世界冠军积分排名",
+                text = if (pagerState.currentPage == 0) "2026 车手世界冠军积分排名" else "2026 车队世界冠军积分排名",
                 color = F1TextSecondary,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold
@@ -154,37 +164,42 @@ fun StandingsScreen(
                 CircularProgressIndicator(color = F1Red)
             }
         } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 16.dp)
-            ) {
-                if (state.selectedTab == 0) {
-                    if (state.driverStandings.isEmpty()) {
-                        item {
-                            EmptyStandingsNotice(title = "赛季初积分榜即将更新")
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize()
+            ) { page ->
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp)
+                ) {
+                    if (page == 0) {
+                        if (state.driverStandings.isEmpty()) {
+                            item {
+                                EmptyStandingsNotice(title = "赛季初积分榜即将更新")
+                            }
+                        } else {
+                            items(state.driverStandings) { driverStanding ->
+                                DriverStandingRow(standing = driverStanding)
+                                Spacer(modifier = Modifier.height(6.dp))
+                            }
                         }
                     } else {
-                        items(state.driverStandings) { driverStanding ->
-                            DriverStandingRow(standing = driverStanding)
-                            Spacer(modifier = Modifier.height(6.dp))
+                        if (state.constructorStandings.isEmpty()) {
+                            item {
+                                EmptyStandingsNotice(title = "赛季初车队积分榜即将更新")
+                            }
+                        } else {
+                            items(state.constructorStandings) { constructorStanding ->
+                                ConstructorStandingRow(standing = constructorStanding)
+                                Spacer(modifier = Modifier.height(6.dp))
+                            }
                         }
                     }
-                } else {
-                    if (state.constructorStandings.isEmpty()) {
-                        item {
-                            EmptyStandingsNotice(title = "赛季初车队积分榜即将更新")
-                        }
-                    } else {
-                        items(state.constructorStandings) { constructorStanding ->
-                            ConstructorStandingRow(standing = constructorStanding)
-                            Spacer(modifier = Modifier.height(6.dp))
-                        }
-                    }
-                }
 
-                item {
-                    Spacer(modifier = Modifier.height(32.dp))
+                    item {
+                        Spacer(modifier = Modifier.height(32.dp))
+                    }
                 }
             }
         }
