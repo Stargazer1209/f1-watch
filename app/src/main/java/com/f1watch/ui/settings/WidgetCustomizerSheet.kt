@@ -22,8 +22,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -67,7 +65,6 @@ fun WidgetCustomizerSheet(
     val context = LocalContext.current
 
     val currentTheme by preferencesManager.widgetThemeFlow.collectAsState(initial = "f1_red")
-    val currentOpacity by preferencesManager.widgetOpacityFlow.collectAsState(initial = 0.90f)
     val showPractice by preferencesManager.showPracticeFlow.collectAsState(initial = true)
 
     ModalBottomSheet(
@@ -90,7 +87,7 @@ fun WidgetCustomizerSheet(
                 fontSize = 18.sp
             )
             Text(
-                text = "实时调节并同步到澎湃OS及原生 Android 桌面卡片",
+                text = "实时调节并同步到 Android 桌面小组件",
                 color = F1TextSecondary,
                 fontSize = 12.sp,
                 modifier = Modifier.padding(top = 2.dp, bottom = 16.dp)
@@ -110,7 +107,7 @@ fun WidgetCustomizerSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(16.dp))
-                    .background(Color(0xFF15151E).copy(alpha = currentOpacity))
+                    .background(Color(0xFF15151E))
                     .border(1.dp, accentColor.copy(alpha = 0.6f), RoundedCornerShape(16.dp))
                     .padding(14.dp)
             ) {
@@ -212,44 +209,6 @@ fun WidgetCustomizerSheet(
             }
 
             Spacer(modifier = Modifier.height(20.dp))
-
-            // Opacity Slider
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "卡片背景不透明度",
-                    color = F1TextWhite,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 13.sp
-                )
-                Text(
-                    text = "${(currentOpacity * 100).toInt()}%",
-                    color = F1Red,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 13.sp
-                )
-            }
-            Slider(
-                value = currentOpacity,
-                onValueChange = { newValue ->
-                    coroutineScope.launch {
-                        preferencesManager.setWidgetOpacity(newValue)
-                        F1CompactWidgetReceiver.updateAll(context)
-                        F1ScheduleWidgetReceiver.updateAll(context)
-                    }
-                },
-                valueRange = 0.40f..1.0f,
-                colors = SliderDefaults.colors(
-                    thumbColor = F1Red,
-                    activeTrackColor = F1Red,
-                    inactiveTrackColor = F1CardSurface
-                )
-            )
-
-            Spacer(modifier = Modifier.height(14.dp))
 
             // Show Practice Toggle
             Row(

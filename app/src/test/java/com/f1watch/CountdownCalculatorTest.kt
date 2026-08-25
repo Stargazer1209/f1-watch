@@ -10,7 +10,6 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.time.Instant
 
 class CountdownCalculatorTest {
 
@@ -22,6 +21,7 @@ class CountdownCalculatorTest {
         assertEquals(0L, result.minutes)
         assertFalse(result.isLive)
         assertEquals("暂无比赛", result.targetSessionName)
+        assertEquals("--", result.formattedCompact)
     }
 
     @Test
@@ -47,11 +47,11 @@ class CountdownCalculatorTest {
         assertTrue(result.days > 0)
         assertTrue(result.formattedLong.contains("FP1"))
         assertTrue(result.targetSessionName.contains("一练"))
+        assertTrue("Compact countdown should show 天+小时", result.formattedCompact.contains("天") && result.formattedCompact.contains("小时"))
     }
 
     @Test
     fun testPastRaceHandling() {
-        // Race far in the past
         val pastRace = Race(
             round = "1",
             raceName = "Old GP",

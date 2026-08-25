@@ -42,8 +42,7 @@ data class JolpicaRaceDto(
     @SerialName("Sprint") val sprint: SessionTime? = null,
     @SerialName("Results") val results: List<RaceResult> = emptyList()
 ) {
-    fun toDomainRace(countryCodeMap: Map<String, String>): Race {
-        val code = countryCodeMap[circuit.location.country] ?: ""
+    fun toDomainRace(): Race {
         return Race(
             round = round,
             raceName = raceName,
@@ -52,7 +51,7 @@ data class JolpicaRaceDto(
                 circuitName = circuit.circuitName,
                 locality = circuit.location.locality,
                 country = circuit.location.country,
-                countryCode = code,
+                countryCode = "",
                 flagEmoji = getFlagEmojiForCountry(circuit.location.country),
                 lat = circuit.location.lat.toDoubleOrNull() ?: 0.0,
                 long = circuit.location.long.toDoubleOrNull() ?: 0.0
@@ -91,6 +90,7 @@ data class JolpicaRaceDto(
             "brazil" -> "🇧🇷"
             "qatar" -> "🇶🇦"
             "uae", "united arab emirates" -> "🇦🇪"
+            "malaysia" -> "🇲🇾"
             else -> "🏁"
         }
     }

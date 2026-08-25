@@ -13,9 +13,11 @@ import kotlinx.coroutines.launch
 
 data class StandingsUiState(
     val isLoading: Boolean = true,
+    val isRefreshing: Boolean = false,
     val selectedTab: Int = 0, // 0: Drivers, 1: Constructors
     val driverStandings: List<DriverStanding> = emptyList(),
-    val constructorStandings: List<ConstructorStanding> = emptyList()
+    val constructorStandings: List<ConstructorStanding> = emptyList(),
+    val toastMessage: String? = null
 )
 
 class StandingsViewModel(application: Application) : AndroidViewModel(application) {
@@ -26,24 +28,41 @@ class StandingsViewModel(application: Application) : AndroidViewModel(applicatio
     val uiState: StateFlow<StandingsUiState> = _uiState.asStateFlow()
 
     init {
-        loadStandings()
+        loadStandings(isInitial = true)
     }
 
     fun selectTab(tabIndex: Int) {
         _uiState.value = _uiState.value.copy(selectedTab = tabIndex)
     }
 
-    fun loadStandings(forceRefresh: Boolean = false) {
+    fun loadStandings(forceRefresh: Boolean = false, isInitial: Boolean = false) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true)
-            val drivers = repository.getDriverStandings(forceRefresh = forceRefresh)
-            val constructors = repository.getConstructorStandings(forceRefresh = forceRefresh)
+            if (isInitial) {
+                _uiState.value = _uiState.value.copy(isLoading = true)
+            } else if (forceRefresh) {
+                _uiState.value = _uiState.value.copy(isRefreshing = true)
+            }
+
+            val (drivers, driversSynced) = repository.getDriverStandingsWithSyncStatus(forceRefresh = forceRefresh)
+            val (constructors, constructorsSynced) = repository.getConstructorStandingsWithSyncStatus(forceRefresh = forceRefresh)
+
+            val syncedOnline = driversSynced || constructorsSynced
+            val toast = if (forceRefresh) {
+                if (syncedOnline) "积分榜已从官方 API 同步成功"
+                else "网络未连接或较慢，已展示本地最新积分榜"
+            } else null
 
             _uiState.value = _uiState.value.copy(
                 isLoading = false,
+                isRefreshing = false,
                 driverStandings = drivers,
-                constructorStandings = constructors
+                constructorStandings = constructors,
+                toastMessage = toast
             )
         }
+    }
+
+    fun clearToast() {
+        _uiState.value = _uiState.value.copy(toastMessage = null)
     }
 }

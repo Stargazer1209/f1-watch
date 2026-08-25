@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -19,9 +20,9 @@ class PreferencesManager(private val context: Context) {
     companion object {
         val KEY_THEME = stringPreferencesKey("key_widget_theme")
         val KEY_OPACITY = floatPreferencesKey("key_widget_opacity")
-        val KEY_REMINDER_MINUTES = stringPreferencesKey("key_reminder_minutes")
         val KEY_LAST_SYNC = longPreferencesKey("key_last_sync_time")
         val KEY_SHOW_PRACTICE = booleanPreferencesKey("key_show_practice_in_widget")
+        val KEY_SYNC_INTERVAL_HOURS = intPreferencesKey("key_sync_interval_hours") // Default 48 (2 days)
     }
 
     val widgetThemeFlow: Flow<String> = context.dataStore.data.map { prefs ->
@@ -34,6 +35,10 @@ class PreferencesManager(private val context: Context) {
 
     val showPracticeFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
         prefs[KEY_SHOW_PRACTICE] ?: true
+    }
+
+    val syncIntervalHoursFlow: Flow<Int> = context.dataStore.data.map { prefs ->
+        prefs[KEY_SYNC_INTERVAL_HOURS] ?: 48
     }
 
     suspend fun setWidgetTheme(themeKey: String) {
@@ -51,6 +56,12 @@ class PreferencesManager(private val context: Context) {
     suspend fun setShowPractice(show: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[KEY_SHOW_PRACTICE] = show
+        }
+    }
+
+    suspend fun setSyncIntervalHours(hours: Int) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_SYNC_INTERVAL_HOURS] = hours
         }
     }
 

@@ -74,7 +74,7 @@ fun CompactWidgetContent(
     opacity: Float
 ) {
     val themeColor = TeamColors.getColor(themeKey)
-    val bgColor = Color(0xFF15151E).copy(alpha = opacity)
+    val bgColor = Color(0xFF15151E)
 
     Box(
         modifier = GlanceModifier
@@ -100,7 +100,7 @@ fun CompactWidgetContent(
                 )
                 Spacer(modifier = GlanceModifier.width(4.dp))
                 Text(
-                    text = "R${race?.round ?: "1"} · ${race?.circuit?.country ?: "F1"}",
+                    text = "R${race?.round ?: "1"} · ${com.f1watch.util.F1Localization.getCountry(race?.circuit?.country ?: "F1")}",
                     style = TextStyle(
                         color = ColorProvider(themeColor),
                         fontWeight = FontWeight.Bold,
@@ -112,7 +112,7 @@ fun CompactWidgetContent(
             Spacer(modifier = GlanceModifier.height(2.dp))
 
             Text(
-                text = race?.raceName ?: "2026 Grand Prix",
+                text = com.f1watch.util.F1Localization.getRaceName(race?.raceName ?: "2026 大奖赛"),
                 maxLines = 1,
                 style = TextStyle(
                     color = ColorProvider(Color.White),

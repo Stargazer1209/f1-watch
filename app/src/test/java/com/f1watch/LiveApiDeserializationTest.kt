@@ -86,7 +86,7 @@ class LiveApiDeserializationTest {
         assertNotNull(races[1].sprint)
         assertNotNull(races[1].sprintQualifying)
 
-        val domainRace = races[1].toDomainRace(emptyMap())
+        val domainRace = races[1].toDomainRace()
         assertEquals("🇨🇳", domainRace.circuit.flagEmoji)
         assertEquals(5, domainRace.getAllSessions().size)
     }

@@ -24,7 +24,7 @@ class F1SyncWorker(
             val repository = F1Repository(appContext)
             val prefs = PreferencesManager(appContext)
 
-            // Force refresh data
+            // Force refresh schedule
             val races = repository.getRaces(forceRefresh = true)
             val next = repository.getNextOrCurrentRace()
 
@@ -49,18 +49,19 @@ class F1SyncWorker(
     companion object {
         private const val WORK_NAME = "f1_schedule_sync_worker"
 
-        fun schedulePeriodicSync(context: Context) {
+        fun schedulePeriodicSync(context: Context, intervalHours: Long = 48) {
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
+                .setRequiresBatteryNotLow(true)
                 .build()
 
-            val workRequest = PeriodicWorkRequestBuilder<F1SyncWorker>(3, TimeUnit.HOURS)
+            val workRequest = PeriodicWorkRequestBuilder<F1SyncWorker>(intervalHours, TimeUnit.HOURS)
                 .setConstraints(constraints)
                 .build()
 
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
                 WORK_NAME,
-                ExistingPeriodicWorkPolicy.KEEP,
+                ExistingPeriodicWorkPolicy.UPDATE,
                 workRequest
             )
         }

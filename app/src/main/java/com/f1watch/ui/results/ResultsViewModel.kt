@@ -13,9 +13,11 @@ import kotlinx.coroutines.launch
 
 data class ResultsUiState(
     val isLoading: Boolean = true,
+    val isRefreshing: Boolean = false,
     val races: List<Race> = emptyList(),
     val selectedRound: String = "1",
-    val results: List<RaceResult> = emptyList()
+    val results: List<RaceResult> = emptyList(),
+    val toastMessage: String? = null
 )
 
 class ResultsViewModel(application: Application) : AndroidViewModel(application) {
@@ -40,23 +42,45 @@ class ResultsViewModel(application: Application) : AndroidViewModel(application)
                 races = races,
                 selectedRound = defaultRound
             )
-            loadRoundResults(defaultRound)
+            loadRoundResults(defaultRound, forceRefresh = false, isInitial = true)
         }
     }
 
     fun selectRound(round: String) {
         _uiState.value = _uiState.value.copy(selectedRound = round)
-        loadRoundResults(round)
+        loadRoundResults(round, forceRefresh = false, isInitial = false)
     }
 
-    fun loadRoundResults(round: String, forceRefresh: Boolean = false) {
+    fun refreshCurrentRound() {
+        loadRoundResults(_uiState.value.selectedRound, forceRefresh = true, isInitial = false)
+    }
+
+    fun loadRoundResults(round: String, forceRefresh: Boolean = false, isInitial: Boolean = false) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true)
-            val results = repository.getRaceResults(round, forceRefresh = forceRefresh)
+            if (isInitial) {
+                _uiState.value = _uiState.value.copy(isLoading = true)
+            } else if (forceRefresh) {
+                _uiState.value = _uiState.value.copy(isRefreshing = true)
+            }
+
+            val (results, syncedOnline) = repository.getRaceResultsWithSyncStatus(round, forceRefresh = forceRefresh)
+            
+            val toast = if (forceRefresh) {
+                if (syncedOnline) "第 $round 站成绩已成功从官方 API 刷新"
+                else if (results.isNotEmpty()) "网络未连接或较慢，已展示第 $round 站本地完赛成绩"
+                else "第 $round 站尚未开赛或暂无完赛数据"
+            } else null
+
             _uiState.value = _uiState.value.copy(
                 isLoading = false,
-                results = results
+                isRefreshing = false,
+                results = results,
+                toastMessage = toast
             )
         }
+    }
+
+    fun clearToast() {
+        _uiState.value = _uiState.value.copy(toastMessage = null)
     }
 }

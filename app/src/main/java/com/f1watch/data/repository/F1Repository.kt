@@ -1,6 +1,7 @@
 package com.f1watch.data.repository
 
 import android.content.Context
+import android.util.Log
 import com.f1watch.data.api.ApiClient
 import com.f1watch.data.local.CalendarAssetReader
 import com.f1watch.data.model.ConstructorStanding
@@ -15,6 +16,10 @@ import kotlinx.coroutines.withContext
 import java.io.File
 
 class F1Repository(private val context: Context) {
+
+    companion object {
+        private const val TAG = "F1Repository"
+    }
 
     private val api = ApiClient.f1Api
     private val json = ApiClient.json
@@ -32,16 +37,15 @@ class F1Repository(private val context: Context) {
     private var cachedConstructorStandings: List<ConstructorStanding> = emptyList()
 
     /**
-     * Get season schedule:
-     * 1. If in-memory cache is present and not forceRefresh, return it immediately.
-     * 2. If in-memory is empty, read local persistent disk cache (which contains latest online sync).
-     * 3. If disk cache doesn't exist (e.g. first launch), load built-in 2026 asset as zero-delay baseline.
-     * 4. Fetch latest online schedule (handling mid-season schedule shifts/cancellations), update memory and persist to disk.
+     * Get season schedule with 3-tier fallback and online refresh.
+     * @return Pair<List<Race>, Boolean> where Boolean indicates whether data was freshly synced from network
      */
-    suspend fun getRaces(forceRefresh: Boolean = false, season: String = "current"): List<Race> = withContext(Dispatchers.IO) {
+    suspend fun getRacesWithSyncStatus(forceRefresh: Boolean = false, season: String = "current"): Pair<List<Race>, Boolean> = withContext(Dispatchers.IO) {
         mutex.withLock {
+            var syncedOnline = false
+
             if (!forceRefresh && cachedRaces.isNotEmpty()) {
-                return@withContext cachedRaces
+                return@withContext Pair(cachedRaces, false)
             }
 
             // Step 1: Try reading disk cache
@@ -51,36 +55,39 @@ class F1Repository(private val context: Context) {
                     val saved = json.decodeFromString<LocalCalendarResponse>(diskContent)
                     if (saved.races.isNotEmpty()) {
                         cachedRaces = saved.races
+                        Log.d(TAG, "Loaded ${cachedRaces.size} races from local disk cache.")
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.w(TAG, "Failed to read disk cache: ${e.message}")
                 }
             }
 
-            // Step 2: If still empty, fall back to assets baseline
+            // Step 2: Fall back to assets baseline if still empty
             if (cachedRaces.isEmpty()) {
                 val assetRaces = CalendarAssetReader.loadDefaultCalendar(context)
                 if (assetRaces.isNotEmpty()) {
                     cachedRaces = assetRaces
+                    Log.d(TAG, "Loaded ${cachedRaces.size} races from assets baseline.")
                 }
             }
 
             // Step 3: Fetch online dynamic data from Jolpica
             try {
+                Log.d(TAG, "Fetching online schedule from Jolpica API (season=$season)...")
                 val response = try {
                     api.getSeasonSchedule(season)
                 } catch (e: Exception) {
-                    // Fallback to specific 2026 season if "current" is transitioning
                     api.getSeasonSchedule("2026")
                 }
 
                 val apiRaces = response.mrData.raceTable.races.map { dto ->
-                    dto.toDomainRace(emptyMap())
+                    dto.toDomainRace()
                 }
 
                 if (apiRaces.isNotEmpty()) {
                     cachedRaces = apiRaces
-                    // Persist to disk so offline restarts retain latest calendar updates
+                    syncedOnline = true
+                    Log.d(TAG, "Successfully synced ${apiRaces.size} races online.")
                     try {
                         val toSave = LocalCalendarResponse(
                             season = response.mrData.raceTable.season.ifEmpty { "current" },
@@ -88,24 +95,41 @@ class F1Repository(private val context: Context) {
                         )
                         scheduleFile.writeText(json.encodeToString(LocalCalendarResponse.serializer(), toSave))
                     } catch (e: Exception) {
-                        e.printStackTrace()
+                        Log.w(TAG, "Failed to persist schedule to disk: ${e.message}")
                     }
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Online schedule fetch error: ${e.message}, using cached/asset data.")
             }
 
-            return@withContext cachedRaces
+            return@withContext Pair(cachedRaces, syncedOnline)
         }
     }
 
-    suspend fun getRaceResults(round: String, forceRefresh: Boolean = false, season: String = "current"): List<RaceResult> = withContext(Dispatchers.IO) {
+    suspend fun getRaces(forceRefresh: Boolean = false, season: String = "current"): List<Race> {
+        return getRacesWithSyncStatus(forceRefresh, season).first
+    }
+
+    suspend fun getRaceResultsWithSyncStatus(round: String, forceRefresh: Boolean = false, season: String = "current"): Pair<List<RaceResult>, Boolean> = withContext(Dispatchers.IO) {
         mutex.withLock {
-            if (!forceRefresh && cachedResults.containsKey(round)) {
-                return@withContext cachedResults[round] ?: emptyList()
+            var syncedOnline = false
+
+            if (!forceRefresh && cachedResults.containsKey(round) && cachedResults[round]?.isNotEmpty() == true) {
+                return@withContext Pair(cachedResults[round] ?: emptyList(), false)
             }
 
+            // If empty, load default asset baseline
+            if (!cachedResults.containsKey(round) || cachedResults[round]?.isEmpty() == true) {
+                val assetResults = CalendarAssetReader.loadDefaultRaceResults(context, round)
+                if (assetResults.isNotEmpty()) {
+                    cachedResults[round] = assetResults
+                    Log.d(TAG, "Loaded Round $round results from asset baseline (${assetResults.size} drivers)")
+                }
+            }
+
+            // Fetch online from API
             try {
+                Log.d(TAG, "Fetching Round $round results from API...")
                 val response = try {
                     api.getRaceResults(season, round)
                 } catch (e: Exception) {
@@ -115,22 +139,30 @@ class F1Repository(private val context: Context) {
                 val results = response.mrData.raceTable.races.firstOrNull()?.results ?: emptyList()
                 if (results.isNotEmpty()) {
                     cachedResults[round] = results
+                    syncedOnline = true
+                    Log.d(TAG, "Successfully synced Round $round results online (${results.size} drivers)")
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Online race results fetch error for round $round: ${e.message}")
             }
 
-            return@withContext cachedResults[round] ?: emptyList()
+            return@withContext Pair(cachedResults[round] ?: emptyList(), syncedOnline)
         }
     }
 
-    suspend fun getDriverStandings(forceRefresh: Boolean = false, season: String = "current"): List<DriverStanding> = withContext(Dispatchers.IO) {
+    suspend fun getRaceResults(round: String, forceRefresh: Boolean = false, season: String = "current"): List<RaceResult> {
+        return getRaceResultsWithSyncStatus(round, forceRefresh, season).first
+    }
+
+    suspend fun getDriverStandingsWithSyncStatus(forceRefresh: Boolean = false, season: String = "current"): Pair<List<DriverStanding>, Boolean> = withContext(Dispatchers.IO) {
         mutex.withLock {
+            var syncedOnline = false
+
             if (!forceRefresh && cachedDriverStandings.isNotEmpty()) {
-                return@withContext cachedDriverStandings
+                return@withContext Pair(cachedDriverStandings, false)
             }
 
-            // Try reading disk cache
+            // 1. Try disk cache
             if (cachedDriverStandings.isEmpty() && driverStandingsFile.exists()) {
                 try {
                     val content = driverStandingsFile.readText()
@@ -139,11 +171,22 @@ class F1Repository(private val context: Context) {
                         cachedDriverStandings = saved
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.w(TAG, "Failed to read driver standings disk cache: ${e.message}")
                 }
             }
 
+            // 2. Try asset baseline
+            if (cachedDriverStandings.isEmpty()) {
+                val assetStandings = CalendarAssetReader.loadDefaultDriverStandings(context)
+                if (assetStandings.isNotEmpty()) {
+                    cachedDriverStandings = assetStandings
+                    Log.d(TAG, "Loaded driver standings from asset baseline (${assetStandings.size} drivers)")
+                }
+            }
+
+            // 3. Fetch online
             try {
+                Log.d(TAG, "Fetching driver standings online...")
                 val response = try {
                     api.getDriverStandings(season)
                 } catch (e: Exception) {
@@ -153,27 +196,35 @@ class F1Repository(private val context: Context) {
                 val standings = response.mrData.standingsTable.standingsLists.firstOrNull()?.driverStandings ?: emptyList()
                 if (standings.isNotEmpty()) {
                     cachedDriverStandings = standings
+                    syncedOnline = true
+                    Log.d(TAG, "Successfully synced ${standings.size} driver standings online.")
                     try {
                         driverStandingsFile.writeText(json.encodeToString(kotlinx.serialization.builtins.ListSerializer(DriverStanding.serializer()), standings))
                     } catch (e: Exception) {
-                        e.printStackTrace()
+                        Log.w(TAG, "Failed to write driver standings cache: ${e.message}")
                     }
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Online driver standings fetch error: ${e.message}")
             }
 
-            return@withContext cachedDriverStandings
+            return@withContext Pair(cachedDriverStandings, syncedOnline)
         }
     }
 
-    suspend fun getConstructorStandings(forceRefresh: Boolean = false, season: String = "current"): List<ConstructorStanding> = withContext(Dispatchers.IO) {
+    suspend fun getDriverStandings(forceRefresh: Boolean = false, season: String = "current"): List<DriverStanding> {
+        return getDriverStandingsWithSyncStatus(forceRefresh, season).first
+    }
+
+    suspend fun getConstructorStandingsWithSyncStatus(forceRefresh: Boolean = false, season: String = "current"): Pair<List<ConstructorStanding>, Boolean> = withContext(Dispatchers.IO) {
         mutex.withLock {
+            var syncedOnline = false
+
             if (!forceRefresh && cachedConstructorStandings.isNotEmpty()) {
-                return@withContext cachedConstructorStandings
+                return@withContext Pair(cachedConstructorStandings, false)
             }
 
-            // Try reading disk cache
+            // 1. Try disk cache
             if (cachedConstructorStandings.isEmpty() && constructorStandingsFile.exists()) {
                 try {
                     val content = constructorStandingsFile.readText()
@@ -182,11 +233,22 @@ class F1Repository(private val context: Context) {
                         cachedConstructorStandings = saved
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.w(TAG, "Failed to read constructor standings disk cache: ${e.message}")
                 }
             }
 
+            // 2. Try asset baseline
+            if (cachedConstructorStandings.isEmpty()) {
+                val assetStandings = CalendarAssetReader.loadDefaultConstructorStandings(context)
+                if (assetStandings.isNotEmpty()) {
+                    cachedConstructorStandings = assetStandings
+                    Log.d(TAG, "Loaded constructor standings from asset baseline (${assetStandings.size} teams)")
+                }
+            }
+
+            // 3. Fetch online
             try {
+                Log.d(TAG, "Fetching constructor standings online...")
                 val response = try {
                     api.getConstructorStandings(season)
                 } catch (e: Exception) {
@@ -196,18 +258,24 @@ class F1Repository(private val context: Context) {
                 val standings = response.mrData.standingsTable.standingsLists.firstOrNull()?.constructorStandings ?: emptyList()
                 if (standings.isNotEmpty()) {
                     cachedConstructorStandings = standings
+                    syncedOnline = true
+                    Log.d(TAG, "Successfully synced ${standings.size} constructor standings online.")
                     try {
                         constructorStandingsFile.writeText(json.encodeToString(kotlinx.serialization.builtins.ListSerializer(ConstructorStanding.serializer()), standings))
                     } catch (e: Exception) {
-                        e.printStackTrace()
+                        Log.w(TAG, "Failed to write constructor standings cache: ${e.message}")
                     }
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Online constructor standings fetch error: ${e.message}")
             }
 
-            return@withContext cachedConstructorStandings
+            return@withContext Pair(cachedConstructorStandings, syncedOnline)
         }
+    }
+
+    suspend fun getConstructorStandings(forceRefresh: Boolean = false, season: String = "current"): List<ConstructorStanding> {
+        return getConstructorStandingsWithSyncStatus(forceRefresh, season).first
     }
 
     suspend fun getNextOrCurrentRace(): Race? {

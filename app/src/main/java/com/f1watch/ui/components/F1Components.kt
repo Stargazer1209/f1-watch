@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -31,6 +33,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -64,23 +70,17 @@ fun F1TopBar(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(4.dp))
+                        .size(10.dp)
+                        .clip(CircleShape)
                         .background(F1Red)
-                        .padding(horizontal = 6.dp, vertical = 2.dp)
-                ) {
-                    Text(
-                        text = "F1",
-                        fontWeight = FontWeight.Black,
-                        color = Color.White,
-                        fontSize = 14.sp
-                    )
-                }
+                )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = title,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.Black,
+                    fontSize = 20.sp,
                     color = F1TextWhite,
-                    fontSize = 18.sp
+                    letterSpacing = (-0.5).sp
                 )
             }
         },
@@ -88,8 +88,8 @@ fun F1TopBar(
             IconButton(onClick = onOpenCustomizer) {
                 Icon(
                     imageVector = Icons.Default.Tune,
-                    contentDescription = "自定义小组件",
-                    tint = F1TextWhite
+                    contentDescription = "小组件定制",
+                    tint = F1TextSecondary
                 )
             }
         },
@@ -102,61 +102,37 @@ fun F1TopBar(
 
 @Composable
 fun SessionStatusBadge(status: SessionStatus) {
-    when (status) {
-        SessionStatus.LIVE -> {
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(F1GreenLive.copy(alpha = 0.2f))
-                    .border(1.dp, F1GreenLive, RoundedCornerShape(12.dp))
-                    .padding(horizontal = 8.dp, vertical = 2.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(6.dp)
-                            .clip(CircleShape)
-                            .background(F1GreenLive)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "LIVE",
-                        color = F1GreenLive,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 10.sp
-                    )
-                }
-            }
-        }
-        SessionStatus.COMPLETED -> {
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(F1CardSurface)
-                    .padding(horizontal = 6.dp, vertical = 2.dp)
-            ) {
-                Text(
-                    text = "已完赛",
-                    color = F1TextMuted,
-                    fontSize = 10.sp
-                )
-            }
-        }
-        SessionStatus.UPCOMING -> {
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(F1Red.copy(alpha = 0.15f))
-                    .padding(horizontal = 6.dp, vertical = 2.dp)
-            ) {
-                Text(
-                    text = "待开始",
-                    color = F1Red,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-        }
+    val (bgColor, textColor, text) = when (status) {
+        SessionStatus.LIVE -> Triple(
+            F1GreenLive.copy(alpha = 0.2f),
+            F1GreenLive,
+            "🟢 LIVE 进行中"
+        )
+        SessionStatus.COMPLETED -> Triple(
+            F1TextMuted.copy(alpha = 0.2f),
+            F1TextMuted,
+            "已结束"
+        )
+        SessionStatus.UPCOMING -> Triple(
+            F1Red.copy(alpha = 0.2f),
+            F1Red,
+            "待开始"
+        )
+    }
+
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(bgColor)
+            .border(1.dp, textColor.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+            .padding(horizontal = 8.dp, vertical = 3.dp)
+    ) {
+        Text(
+            text = text,
+            color = textColor,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Bold
+        )
     }
 }
 
@@ -164,18 +140,17 @@ fun SessionStatusBadge(status: SessionStatus) {
 fun HeroNextRaceCard(
     race: Race,
     countdown: CountdownResult,
-    isExpanded: Boolean,
-    onToggleExpand: () -> Unit,
-    onSyncCalendar: () -> Unit
+    isExpanded: Boolean = false,
+    onToggleExpand: () -> Unit = {},
+    onSyncCalendar: () -> Unit = {}
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-            .clickable { onToggleExpand() },
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = F1CardBg),
-        border = CardDefaults.outlinedCardBorder().copy(brush = Brush.horizontalGradient(listOf(F1Red, F1CardBorder)))
+        border = CardDefaults.outlinedCardBorder()
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             // Header: Round + Flag + Country
@@ -203,14 +178,14 @@ fun HeroNextRaceCard(
             Spacer(modifier = Modifier.height(6.dp))
 
             Text(
-                text = race.raceName,
+                text = com.f1watch.util.F1Localization.getRaceName(race.raceName),
                 fontWeight = FontWeight.Black,
                 color = F1TextWhite,
                 fontSize = 20.sp
             )
 
             Text(
-                text = "📍 ${race.circuit.circuitName} · ${race.circuit.locality}",
+                text = "📍 ${com.f1watch.util.F1Localization.getCircuitName(race.circuit.circuitName)} · ${com.f1watch.util.F1Localization.getLocality(race.circuit.locality)}",
                 color = F1TextSecondary,
                 fontSize = 12.sp
             )
@@ -258,12 +233,12 @@ fun HeroNextRaceCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .clip(RoundedCornerShape(8.dp))
                         .background(F1CardSurface)
                         .clickable { onSyncCalendar() }
-                        .padding(horizontal = 10.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                        .padding(horizontal = 10.dp, vertical = 6.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.CalendarMonth,
@@ -307,8 +282,50 @@ fun HeroNextRaceCard(
             // Expandable Sessions List directly inside Hero Card!
             AnimatedVisibility(visible = isExpanded) {
                 Column(modifier = Modifier.padding(top = 14.dp)) {
-                    HorizontalDivider(color = F1CardBorder, thickness = 0.5.dp)
-                    Spacer(modifier = Modifier.height(10.dp))
+                    // High-Impact Track Outline Card (Responsive Aspect Ratio)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(2.0f)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(F1Dark)
+                            .border(1.dp, F1CardBorder, RoundedCornerShape(12.dp))
+                            .padding(8.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        coil.compose.AsyncImage(
+                            model = com.f1watch.ui.util.F1MediaHelper.getCircuitMapUrl(race.circuit.circuitId),
+                            contentDescription = race.circuit.circuitName,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(top = 28.dp, bottom = 4.dp, start = 8.dp, end = 8.dp),
+                            contentScale = androidx.compose.ui.layout.ContentScale.Fit
+                        )
+                        // Location badge top-left
+                        Row(
+                            modifier = Modifier
+                                .align(Alignment.TopStart)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(F1CardSurface.copy(alpha = 0.9f))
+                                .padding(horizontal = 8.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "🏁 ${com.f1watch.util.F1Localization.getCircuitName(race.circuit.circuitName)}",
+                                color = F1TextWhite,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 11.sp
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "· ${com.f1watch.util.F1Localization.getLocality(race.circuit.locality)}",
+                                color = F1TextSecondary,
+                                fontSize = 10.sp
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
 
                     Text(
                         text = "本站完整周末时间表 (已转为本地时间)",
@@ -333,30 +350,25 @@ fun HeroNextRaceCard(
                                     modifier = Modifier
                                         .size(6.dp)
                                         .clip(CircleShape)
-                                        .background(
-                                            when (session.status) {
-                                                SessionStatus.LIVE -> F1GreenLive
-                                                SessionStatus.COMPLETED -> F1TextMuted
-                                                SessionStatus.UPCOMING -> F1Red
-                                            }
-                                        )
+                                        .background(if (session.status == SessionStatus.LIVE) F1GreenLive else F1Red)
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = session.name,
+                                    text = com.f1watch.util.F1Localization.getSessionName(session.name),
                                     color = F1TextWhite,
-                                    fontSize = 12.sp,
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.SemiBold
                                 )
                             }
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
                                     text = session.sessionTime.formatLocalDayTime(),
-                                    color = F1TextSecondary,
-                                    fontSize = 11.sp
+                                    color = F1TextWhite,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
                                 )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                SessionStatusBadge(session.status)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                SessionStatusBadge(status = session.status)
                             }
                         }
                         Spacer(modifier = Modifier.height(6.dp))

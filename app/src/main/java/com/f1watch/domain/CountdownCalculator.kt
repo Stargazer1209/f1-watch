@@ -65,16 +65,18 @@ object CountdownCalculator {
         val minutes = (totalSeconds % 3600) / 60
         val seconds = totalSeconds % 60
 
-        val compact = if (days > 0) {
-            "${days}天 ${hours.toString().padStart(2, '0')}时 ${minutes.toString().padStart(2, '0')}分"
-        } else {
-            "${hours.toString().padStart(2, '0')}时 ${minutes.toString().padStart(2, '0')}分 ${seconds.toString().padStart(2, '0')}秒"
+        val compact = when {
+            days > 0 -> "${days}天 ${hours}小时"
+            hours > 0 -> "${hours}小时 ${minutes}分"
+            minutes > 0 -> "${minutes}分钟"
+            else -> "${seconds}秒 即将开赛"
         }
 
-        val long = if (days > 0) {
-            "距 ${targetSession.shortName} 开始还有 ${days} 天 ${hours} 小时 ${minutes} 分钟"
-        } else {
-            "距 ${targetSession.shortName} 开始还有 ${hours} 小时 ${minutes} 分钟"
+        val long = when {
+            days > 0 -> "距 ${targetSession.shortName} 开始还有 ${days} 天 ${hours} 小时"
+            hours > 0 -> "距 ${targetSession.shortName} 开始还有 ${hours} 小时 ${minutes} 分钟"
+            minutes > 0 -> "距 ${targetSession.shortName} 开始还有 ${minutes} 分钟"
+            else -> "距 ${targetSession.shortName} 即将开始 (${seconds}秒)"
         }
 
         return CountdownResult(

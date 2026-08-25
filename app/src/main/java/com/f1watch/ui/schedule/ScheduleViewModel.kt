@@ -17,6 +17,7 @@ import kotlinx.coroutines.launch
 
 data class ScheduleUiState(
     val isLoading: Boolean = true,
+    val isRefreshing: Boolean = false,
     val races: List<Race> = emptyList(),
     val nextRace: Race? = null,
     val countdown: CountdownResult = CountdownCalculator.calculate(null),
@@ -33,21 +34,34 @@ class ScheduleViewModel(application: Application) : AndroidViewModel(application
     val uiState: StateFlow<ScheduleUiState> = _uiState.asStateFlow()
 
     init {
-        loadSchedule()
+        loadSchedule(isInitial = true)
         startCountdownTicker()
     }
 
-    fun loadSchedule(forceRefresh: Boolean = false) {
+    fun loadSchedule(forceRefresh: Boolean = false, isInitial: Boolean = false) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true)
-            val races = repository.getRaces(forceRefresh = forceRefresh)
+            if (isInitial) {
+                _uiState.value = _uiState.value.copy(isLoading = true)
+            } else {
+                _uiState.value = _uiState.value.copy(isRefreshing = true)
+            }
+
+            val (races, syncedOnline) = repository.getRacesWithSyncStatus(forceRefresh = forceRefresh)
             val next = repository.getNextOrCurrentRace()
             val countdown = CountdownCalculator.calculate(next)
+
+            val toast = if (forceRefresh) {
+                if (syncedOnline) "赛历已从官方 API 刷新成功 (共 ${races.size} 站)"
+                else "网络未连接或较慢，已展示本地赛程 (共 ${races.size} 站)"
+            } else null
+
             _uiState.value = _uiState.value.copy(
                 isLoading = false,
+                isRefreshing = false,
                 races = races,
                 nextRace = next,
-                countdown = countdown
+                countdown = countdown,
+                toastMessage = toast
             )
         }
     }
@@ -56,12 +70,16 @@ class ScheduleViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             while (isActive) {
                 val next = _uiState.value.nextRace
-                if (next != null) {
-                    _uiState.value = _uiState.value.copy(
-                        countdown = CountdownCalculator.calculate(next)
-                    )
+                val countdown = CountdownCalculator.calculate(next)
+                _uiState.value = _uiState.value.copy(countdown = countdown)
+
+                val dynamicDelay = when {
+                    countdown.days >= 1 -> 60_000L // 1 minute
+                    countdown.hours >= 1 -> 30_000L // 30 seconds
+                    countdown.minutes >= 1 -> 10_000L // 10 seconds
+                    else -> 1_000L // 1 second
                 }
-                delay(1000)
+                delay(dynamicDelay)
             }
         }
     }

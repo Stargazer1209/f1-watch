@@ -32,6 +32,7 @@ object TeamColors {
     val Alpine = Color(0xFF0093CC)
     val RB = Color(0xFF6692FF)
     val Haas = Color(0xFFB6BABD)
+    val Cadillac = Color(0xFFD4AF37)
 
     val TeamThemeMap = mapOf(
         "f1_red" to F1Red,
@@ -44,21 +45,23 @@ object TeamColors {
         "sauber" to Sauber,
         "alpine" to Alpine,
         "rb" to RB,
-        "haas" to Haas
+        "haas" to Haas,
+        "cadillac" to Cadillac
     )
 
     val TeamNameMap = mapOf(
-        "f1_red" to "F1 官方极速红",
-        "ferrari" to "Scuderia Ferrari (法拉利)",
-        "mclaren" to "McLaren (迈凯伦木瓜橙)",
-        "redbull" to "Red Bull Racing (红牛)",
-        "mercedes" to "Mercedes-AMG (奔驰马石油)",
-        "aston_martin" to "Aston Martin (阿斯顿马丁)",
-        "williams" to "Williams Racing (威廉姆斯)",
-        "sauber" to "Stake / Audi (索伯荧光绿)",
-        "alpine" to "Alpine (阿尔卑)",
-        "rb" to "Racing Bulls (小红牛)",
-        "haas" to "Haas F1 Team (哈斯)"
+        "f1_red" to "F1 官方红",
+        "ferrari" to "法拉利",
+        "mclaren" to "迈凯伦",
+        "redbull" to "红牛",
+        "mercedes" to "梅赛德斯",
+        "aston_martin" to "阿斯顿·马丁",
+        "williams" to "威廉姆斯",
+        "sauber" to "索伯",
+        "alpine" to "阿尔派",
+        "rb" to "小牛 RB",
+        "haas" to "哈斯",
+        "cadillac" to "凯迪拉克"
     )
 
     fun getColor(key: String): Color {
@@ -78,6 +81,7 @@ object TeamColors {
             "alpine" in lower -> Alpine
             "rb" in lower || "toro rosso" in lower || "alphatauri" in lower -> RB
             "haas" in lower -> Haas
+            "cadillac" in lower || "andretti" in lower -> Cadillac
             else -> F1Red
         }
     }

@@ -28,6 +28,7 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:launchMode="singleTask"
             android:theme="@style/Theme.F1Watch">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -35,7 +36,7 @@
             </intent-filter>
         </activity>
 
-        <!-- 2x2 Compact Countdown Widget Receiver (Android & HyperOS compatible) -->
+        <!-- 2x2 Compact Countdown Widget Receiver (Standard Android 13+ & Glance) -->
         <receiver
             android:name=".widget.F1CompactWidgetReceiver"
             android:exported="true"
@@ -46,13 +47,9 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/f1_compact_widget_info" />
-            <!-- HyperOS / MIUI Widget Identifier -->
-            <meta-data
-                android:name="miui.appwidget.provider"
-                android:resource="@xml/f1_compact_widget_info" />
         </receiver>
 
-        <!-- 2x4 Full Weekend Schedule Widget Receiver (Android & HyperOS compatible) -->
+        <!-- 2x4 Full Weekend Schedule Widget Receiver (Standard Android 13+ & Glance) -->
         <receiver
             android:name=".widget.F1ScheduleWidgetReceiver"
             android:exported="true"
@@ -62,10 +59,6 @@
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
-                android:resource="@xml/f1_schedule_widget_info" />
-            <!-- HyperOS / MIUI Widget Identifier -->
-            <meta-data
-                android:name="miui.appwidget.provider"
                 android:resource="@xml/f1_schedule_widget_info" />
         </receiver>
 

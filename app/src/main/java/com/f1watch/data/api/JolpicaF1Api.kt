@@ -42,7 +42,7 @@ interface JolpicaF1Api {
 }
 
 object ApiClient {
-    private const val BASE_URL = "https://api.jolpica.com/ergast/"
+    private const val BASE_URL = "https://api.jolpi.ca/ergast/"
 
     val json = Json {
         ignoreUnknownKeys = true

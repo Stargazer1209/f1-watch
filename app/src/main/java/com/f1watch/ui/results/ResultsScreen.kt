@@ -1,5 +1,6 @@
 package com.f1watch.ui.results
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -21,19 +22,22 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.EmojiEvents
-import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -58,6 +62,14 @@ fun ResultsScreen(
     viewModel: ResultsViewModel
 ) {
     val state by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+
+    LaunchedEffect(state.toastMessage) {
+        state.toastMessage?.let {
+            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            viewModel.clearToast()
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -102,19 +114,47 @@ fun ResultsScreen(
 
         val currentRace = state.races.firstOrNull { it.round == state.selectedRound }
         currentRace?.let { race ->
-            Text(
-                text = "${race.circuit.flagEmoji} ${race.raceName}",
-                fontWeight = FontWeight.Black,
-                color = F1TextWhite,
-                fontSize = 18.sp,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-            )
-            Text(
-                text = "📍 ${race.circuit.circuitName} · ${race.date}",
-                color = F1TextSecondary,
-                fontSize = 12.sp,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp)
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "${race.circuit.flagEmoji} ${com.f1watch.util.F1Localization.getRaceName(race.raceName)}",
+                        fontWeight = FontWeight.Black,
+                        color = F1TextWhite,
+                        fontSize = 18.sp
+                    )
+                    Text(
+                        text = "📍 ${com.f1watch.util.F1Localization.getCircuitName(race.circuit.circuitName)} · ${race.date}",
+                        color = F1TextSecondary,
+                        fontSize = 12.sp
+                    )
+                }
+
+                IconButton(
+                    onClick = { viewModel.refreshCurrentRound() },
+                    enabled = !state.isRefreshing,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    if (state.isRefreshing) {
+                        CircularProgressIndicator(
+                            color = F1Red,
+                            strokeWidth = 2.dp,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "刷新本站成绩",
+                            tint = F1TextSecondary
+                        )
+                    }
+                }
+            }
         }
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -204,7 +244,7 @@ fun PodiumSection(p1: RaceResult, p2: RaceResult, p3: RaceResult) {
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Text(
-                text = "🏆 领奖台 (TOP 3)",
+                text = "🏆 领奖台前三名",
                 color = F1TextWhite,
                 fontWeight = FontWeight.Black,
                 fontSize = 14.sp
@@ -226,19 +266,39 @@ fun PodiumSection(p1: RaceResult, p2: RaceResult, p3: RaceResult) {
 @Composable
 fun PodiumStep(result: RaceResult, position: String, color: Color, height: Int) {
     val teamColor = TeamColors.getColorByConstructorName(result.constructor.name)
+    val localizedDriverName = com.f1watch.util.F1Localization.getDriverName(result.driver.fullName)
+    val localizedTeamName = com.f1watch.util.F1Localization.getConstructorName(result.constructor.name)
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.width(96.dp)
     ) {
+        Box(
+            modifier = Modifier
+                .size(38.dp)
+                .clip(CircleShape)
+                .background(F1CardSurface)
+                .border(1.dp, color, CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            coil.compose.AsyncImage(
+                model = com.f1watch.ui.util.F1MediaHelper.getDriverHeadshotUrl(result.driver.code.ifEmpty { result.driver.familyName }),
+                contentDescription = localizedDriverName,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop
+            )
+        }
+        Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = result.driver.code.ifEmpty { result.driver.familyName.take(3).uppercase() },
+            text = localizedDriverName,
             color = F1TextWhite,
             fontWeight = FontWeight.Black,
-            fontSize = 14.sp
+            fontSize = 12.sp,
+            maxLines = 1,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
         )
         Text(
-            text = result.constructor.name,
+            text = localizedTeamName,
             color = teamColor,
             fontSize = 10.sp,
             fontWeight = FontWeight.SemiBold,
@@ -279,6 +339,8 @@ fun PodiumStep(result: RaceResult, position: String, color: Color, height: Int) 
 fun ResultRowItem(result: RaceResult) {
     val teamColor = TeamColors.getColorByConstructorName(result.constructor.name)
     val isFastest = result.fastestLap?.rank == "1"
+    val localizedDriverName = com.f1watch.util.F1Localization.getDriverName(result.driver.fullName)
+    val localizedTeamName = com.f1watch.util.F1Localization.getConstructorName(result.constructor.name)
 
     Row(
         modifier = Modifier
@@ -307,21 +369,45 @@ fun ResultRowItem(result: RaceResult) {
         Box(
             modifier = Modifier
                 .width(4.dp)
-                .height(24.dp)
+                .height(28.dp)
                 .clip(RoundedCornerShape(2.dp))
                 .background(teamColor)
         )
 
-        Spacer(modifier = Modifier.width(10.dp))
+        Spacer(modifier = Modifier.width(8.dp))
+
+        // Driver Headshot
+        Box(
+            modifier = Modifier
+                .size(32.dp)
+                .clip(CircleShape)
+                .background(F1CardSurface),
+            contentAlignment = Alignment.Center
+        ) {
+            coil.compose.AsyncImage(
+                model = com.f1watch.ui.util.F1MediaHelper.getDriverHeadshotUrl(result.driver.code.ifEmpty { result.driver.familyName }),
+                contentDescription = localizedDriverName,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop
+            )
+        }
+
+        Spacer(modifier = Modifier.width(8.dp))
 
         // Driver name & Team
         Column(modifier = Modifier.weight(1f)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 Text(
-                    text = result.driver.fullName,
+                    text = localizedDriverName,
                     color = F1TextWhite,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp
+                    fontSize = 14.sp,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
                 )
                 if (isFastest) {
                     Spacer(modifier = Modifier.width(6.dp))
@@ -329,21 +415,25 @@ fun ResultRowItem(result: RaceResult) {
                         modifier = Modifier
                             .clip(RoundedCornerShape(4.dp))
                             .background(FastestLapPurple)
-                            .padding(horizontal = 4.dp, vertical = 1.dp)
+                            .padding(horizontal = 5.dp, vertical = 2.dp)
                     ) {
                         Text(
                             text = "FL 最速圈",
                             color = Color.White,
                             fontSize = 8.sp,
-                            fontWeight = FontWeight.Black
+                            fontWeight = FontWeight.Black,
+                            maxLines = 1,
+                            softWrap = false
                         )
                     }
                 }
             }
             Text(
-                text = result.constructor.name,
+                text = localizedTeamName,
                 color = F1TextSecondary,
-                fontSize = 11.sp
+                fontSize = 11.sp,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
         }
 

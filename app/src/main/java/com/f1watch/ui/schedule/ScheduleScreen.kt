@@ -3,12 +3,14 @@ package com.f1watch.ui.schedule
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -30,11 +32,15 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -56,6 +62,7 @@ import com.f1watch.ui.theme.F1Red
 import com.f1watch.ui.theme.F1TextMuted
 import com.f1watch.ui.theme.F1TextSecondary
 import com.f1watch.ui.theme.F1TextWhite
+import com.f1watch.util.F1Localization
 
 @Composable
 fun ScheduleScreen(
@@ -122,13 +129,22 @@ fun ScheduleScreen(
                         )
                         IconButton(
                             onClick = { viewModel.loadSchedule(forceRefresh = true) },
+                            enabled = !state.isRefreshing,
                             modifier = Modifier.size(24.dp)
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Refresh,
-                                contentDescription = "刷新",
-                                tint = F1TextSecondary
-                            )
+                            if (state.isRefreshing) {
+                                CircularProgressIndicator(
+                                    color = F1Red,
+                                    strokeWidth = 2.dp,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.Refresh,
+                                    contentDescription = "刷新",
+                                    tint = F1TextSecondary
+                                )
+                            }
                         }
                     }
                 }
@@ -164,30 +180,40 @@ fun RaceCardItem(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp)
-            .clickable { onToggleExpand() },
+            .padding(horizontal = 16.dp, vertical = 5.dp),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isCompleted) F1CardBg.copy(alpha = 0.6f) else F1CardBg
         ),
-        border = CardDefaults.outlinedCardBorder().copy(
-            brush = androidx.compose.ui.graphics.SolidColor(if (isExpanded) F1Red else F1CardBorder)
-        )
+        border = CardDefaults.outlinedCardBorder()
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp)
+        ) {
+            // Header Row
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onToggleExpand() },
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(text = race.circuit.flagEmoji, fontSize = 20.sp)
-                    Spacer(modifier = Modifier.width(8.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(
+                        text = race.circuit.flagEmoji,
+                        fontSize = 20.sp
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = "ROUND ${race.round}",
-                                color = if (isCompleted) F1TextMuted else F1Red,
+                                text = "R${race.round}",
+                                color = F1Red,
                                 fontWeight = FontWeight.Black,
                                 fontSize = 11.sp
                             )
@@ -209,17 +235,17 @@ fun RaceCardItem(
                             }
                         }
                         Text(
-                            text = race.raceName,
+                            text = F1Localization.getRaceName(race.raceName),
                             color = if (isCompleted) F1TextSecondary else F1TextWhite,
                             fontWeight = FontWeight.Bold,
-                            fontSize = 15.sp
+                            fontSize = 14.sp
                         )
                     }
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = race.date.substring(5),
+                        text = race.date,
                         color = F1TextMuted,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold
@@ -238,13 +264,50 @@ fun RaceCardItem(
                     HorizontalDivider(color = F1CardBorder, thickness = 0.5.dp)
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    Text(
-                        text = "📍 赛道：${race.circuit.circuitName} (${race.circuit.locality}, ${race.circuit.country})",
-                        color = F1TextSecondary,
-                        fontSize = 12.sp
-                    )
+                    // High-Impact Track Outline Card (Responsive Aspect Ratio)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(2.0f)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(F1Dark)
+                            .border(1.dp, F1CardBorder, RoundedCornerShape(12.dp))
+                            .padding(8.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        coil.compose.AsyncImage(
+                            model = com.f1watch.ui.util.F1MediaHelper.getCircuitMapUrl(race.circuit.circuitId),
+                            contentDescription = race.circuit.circuitName,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(top = 28.dp, bottom = 4.dp, start = 8.dp, end = 8.dp),
+                            contentScale = androidx.compose.ui.layout.ContentScale.Fit
+                        )
+                        // Location badge top-left
+                        Row(
+                            modifier = Modifier
+                                .align(Alignment.TopStart)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(F1CardSurface.copy(alpha = 0.9f))
+                                .padding(horizontal = 8.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "🏁 ${F1Localization.getCircuitName(race.circuit.circuitName)}",
+                                color = F1TextWhite,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 11.sp
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "· ${F1Localization.getLocality(race.circuit.locality)}",
+                                color = F1TextSecondary,
+                                fontSize = 10.sp
+                            )
+                        }
+                    }
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
                     // Sessions Breakdown
                     race.getAllSessions().forEach { session ->
@@ -311,7 +374,7 @@ fun SessionRowItem(session: SessionItem) {
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = session.name,
+                text = F1Localization.getSessionName(session.name),
                 color = F1TextWhite,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold

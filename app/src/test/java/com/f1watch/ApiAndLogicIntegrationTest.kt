@@ -50,7 +50,7 @@ class ApiAndLogicIntegrationTest {
         println(">>> [DEBUG LOG] Fetched ${racesDto.size} races for season ${response.mrData.raceTable.season}.")
         assertTrue("Races list should not be empty", racesDto.isNotEmpty())
 
-        val domainRaces = racesDto.map { it.toDomainRace(emptyMap()) }
+        val domainRaces = racesDto.map { it.toDomainRace() }
         val nextRace = domainRaces.firstOrNull { !it.isWeekendCompleted() } ?: domainRaces.lastOrNull()
         assertNotNull(nextRace)
         println(">>> [DEBUG LOG] Current/Next Grand Prix: Round ${nextRace?.round} - ${nextRace?.raceName} (${nextRace?.date})")

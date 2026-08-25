@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
@@ -60,6 +62,15 @@ fun StandingsScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
 
+    val context = androidx.compose.ui.platform.LocalContext.current
+
+    androidx.compose.runtime.LaunchedEffect(state.toastMessage) {
+        state.toastMessage?.let {
+            android.widget.Toast.makeText(context, it, android.widget.Toast.LENGTH_SHORT).show()
+            viewModel.clearToast()
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -83,7 +94,7 @@ fun StandingsScreen(
                 onClick = { viewModel.selectTab(0) },
                 text = {
                     Text(
-                        text = "车手积分榜 (Drivers)",
+                        text = "车手积分榜",
                         fontWeight = if (state.selectedTab == 0) FontWeight.Black else FontWeight.Normal,
                         fontSize = 14.sp,
                         color = if (state.selectedTab == 0) F1TextWhite else F1TextMuted
@@ -95,7 +106,7 @@ fun StandingsScreen(
                 onClick = { viewModel.selectTab(1) },
                 text = {
                     Text(
-                        text = "车队积分榜 (Constructors)",
+                        text = "车队积分榜",
                         fontWeight = if (state.selectedTab == 1) FontWeight.Black else FontWeight.Normal,
                         fontSize = 14.sp,
                         color = if (state.selectedTab == 1) F1TextWhite else F1TextMuted
@@ -119,13 +130,22 @@ fun StandingsScreen(
             )
             IconButton(
                 onClick = { viewModel.loadStandings(forceRefresh = true) },
+                enabled = !state.isRefreshing,
                 modifier = Modifier.size(24.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.Refresh,
-                    contentDescription = "刷新",
-                    tint = F1TextSecondary
-                )
+                if (state.isRefreshing) {
+                    CircularProgressIndicator(
+                        color = F1Red,
+                        strokeWidth = 2.dp,
+                        modifier = Modifier.size(16.dp)
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = "刷新",
+                        tint = F1TextSecondary
+                    )
+                }
             }
         }
 
@@ -173,9 +193,10 @@ fun StandingsScreen(
 
 @Composable
 fun DriverStandingRow(standing: DriverStanding) {
-    val constructor = standing.constructors.firstOrNull()
-    val constructorName = constructor?.name ?: ""
+    val constructorName = standing.constructors.firstOrNull()?.name ?: "Unknown"
     val teamColor = TeamColors.getColorByConstructorName(constructorName)
+    val localizedDriverName = com.f1watch.util.F1Localization.getDriverName(standing.driver.fullName)
+    val localizedConstructorName = com.f1watch.util.F1Localization.getConstructorName(constructorName)
 
     Row(
         modifier = Modifier
@@ -204,21 +225,45 @@ fun DriverStandingRow(standing: DriverStanding) {
         Box(
             modifier = Modifier
                 .width(4.dp)
-                .height(26.dp)
+                .height(28.dp)
                 .clip(RoundedCornerShape(2.dp))
                 .background(teamColor)
         )
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        // Driver Headshot Avatar
+        Box(
+            modifier = Modifier
+                .size(32.dp)
+                .clip(CircleShape)
+                .background(F1CardSurface),
+            contentAlignment = Alignment.Center
+        ) {
+            coil.compose.AsyncImage(
+                model = com.f1watch.ui.util.F1MediaHelper.getDriverHeadshotUrl(standing.driver.code.ifEmpty { standing.driver.familyName }),
+                contentDescription = localizedDriverName,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop
+            )
+        }
 
         Spacer(modifier = Modifier.width(10.dp))
 
         // Driver details
         Column(modifier = Modifier.weight(1f)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 Text(
-                    text = standing.driver.fullName,
+                    text = localizedDriverName,
                     color = F1TextWhite,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp
+                    fontSize = 14.sp,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
                 )
                 if (standing.driver.permanentNumber.isNotEmpty()) {
                     Spacer(modifier = Modifier.width(6.dp))
@@ -226,14 +271,18 @@ fun DriverStandingRow(standing: DriverStanding) {
                         text = "#${standing.driver.permanentNumber}",
                         color = F1TextMuted,
                         fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        softWrap = false
                     )
                 }
             }
             Text(
-                text = constructorName,
+                text = localizedConstructorName,
                 color = F1TextSecondary,
-                fontSize = 11.sp
+                fontSize = 11.sp,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
         }
 
@@ -260,70 +309,105 @@ fun DriverStandingRow(standing: DriverStanding) {
 @Composable
 fun ConstructorStandingRow(standing: ConstructorStanding) {
     val teamColor = TeamColors.getColorByConstructorName(standing.constructor.name)
+    val localizedTeamName = com.f1watch.util.F1Localization.getConstructorName(standing.constructor.name)
+    val localizedCountry = com.f1watch.util.F1Localization.getCountry(standing.constructor.nationality)
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .background(F1CardBg)
-            .border(0.5.dp, F1CardBorder, RoundedCornerShape(8.dp))
-            .padding(horizontal = 12.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = F1CardBg),
+        border = CardDefaults.outlinedCardBorder()
     ) {
-        // Rank
-        Text(
-            text = standing.positionText.ifEmpty { standing.position },
-            color = when (standing.position) {
-                "1" -> PodiumGold
-                "2" -> PodiumSilver
-                "3" -> PodiumBronze
-                else -> F1TextWhite
-            },
-            fontWeight = FontWeight.Black,
-            fontSize = 15.sp,
-            modifier = Modifier.width(28.dp)
-        )
-
-        // Team Color Bar
-        Box(
-            modifier = Modifier
-                .width(4.dp)
-                .height(26.dp)
-                .clip(RoundedCornerShape(2.dp))
-                .background(teamColor)
-        )
-
-        Spacer(modifier = Modifier.width(10.dp))
-
-        // Constructor Name
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = standing.constructor.name,
-                color = F1TextWhite,
-                fontWeight = FontWeight.Bold,
-                fontSize = 14.sp
-            )
-            Text(
-                text = standing.constructor.nationality,
-                color = F1TextSecondary,
-                fontSize = 11.sp
-            )
-        }
-
-        // Points & Wins
-        Column(horizontalAlignment = Alignment.End) {
-            Text(
-                text = "${standing.points} PTS",
-                color = F1TextWhite,
-                fontWeight = FontWeight.Black,
-                fontSize = 14.sp
-            )
-            if (standing.wins.toIntOrNull() ?: 0 > 0) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            // Header Row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Rank
                 Text(
-                    text = "${standing.wins} 胜场",
-                    color = PodiumGold,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold
+                    text = standing.positionText.ifEmpty { standing.position },
+                    color = when (standing.position) {
+                        "1" -> PodiumGold
+                        "2" -> PodiumSilver
+                        "3" -> PodiumBronze
+                        else -> F1TextWhite
+                    },
+                    fontWeight = FontWeight.Black,
+                    fontSize = 16.sp,
+                    modifier = Modifier.width(28.dp)
+                )
+
+                // Team Color Bar
+                Box(
+                    modifier = Modifier
+                        .width(4.dp)
+                        .height(26.dp)
+                        .clip(RoundedCornerShape(2.dp))
+                        .background(teamColor)
+                )
+
+                Spacer(modifier = Modifier.width(10.dp))
+
+                // Constructor Name
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = localizedTeamName,
+                        color = F1TextWhite,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp
+                    )
+                    if (localizedTeamName != standing.constructor.name) {
+                        Text(
+                            text = "${standing.constructor.name} · $localizedCountry",
+                            color = F1TextSecondary,
+                            fontSize = 11.sp
+                        )
+                    } else {
+                        Text(
+                            text = localizedCountry,
+                            color = F1TextSecondary,
+                            fontSize = 11.sp
+                        )
+                    }
+                }
+
+                // Points & Wins
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = "${standing.points} PTS",
+                        color = F1TextWhite,
+                        fontWeight = FontWeight.Black,
+                        fontSize = 15.sp
+                    )
+                    if (standing.wins.toIntOrNull() ?: 0 > 0) {
+                        Text(
+                            text = "${standing.wins} 胜场",
+                            color = PodiumGold,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            // Large Panoramic Car Livery Image (Responsive Aspect Ratio)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(3.6f)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color(0xFF0C0C12))
+                    .padding(horizontal = 4.dp, vertical = 2.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                coil.compose.AsyncImage(
+                    model = com.f1watch.ui.util.F1MediaHelper.getCarImageUrl(standing.constructor.constructorId),
+                    contentDescription = standing.constructor.name,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Fit
                 )
             }
         }

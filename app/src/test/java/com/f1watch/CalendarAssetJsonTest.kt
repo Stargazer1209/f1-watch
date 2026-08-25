@@ -1,6 +1,9 @@
 package com.f1watch
 
+import com.f1watch.data.model.ConstructorStanding
+import com.f1watch.data.model.DriverStanding
 import com.f1watch.data.model.LocalCalendarResponse
+import com.f1watch.data.model.RaceResult
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -49,5 +52,60 @@ class CalendarAssetJsonTest {
         assertEquals("23", lastRound.round)
         assertNotNull(lastRound.raceName)
         assertTrue(lastRound.circuit.flagEmoji.isNotEmpty())
+    }
+
+    @Test
+    fun testDriverStandingsJsonIntegrity() {
+        val file = File("src/main/assets/2026_driver_standings.json")
+        assertTrue("2026_driver_standings.json must exist in assets", file.exists())
+
+        val content = file.readText()
+        val standings = json.decodeFromString<List<DriverStanding>>(content)
+
+        assertEquals(23, standings.size)
+
+        val leader = standings.first()
+        assertEquals("1", leader.position)
+        assertNotNull(leader.driver.fullName)
+        assertTrue(leader.points.toDouble() > 0)
+        assertTrue(leader.constructors.isNotEmpty())
+    }
+
+    @Test
+    fun testConstructorStandingsJsonIntegrity() {
+        val file = File("src/main/assets/2026_constructor_standings.json")
+        assertTrue("2026_constructor_standings.json must exist in assets", file.exists())
+
+        val content = file.readText()
+        val standings = json.decodeFromString<List<ConstructorStanding>>(content)
+
+        assertEquals(11, standings.size)
+
+        val leader = standings.first()
+        assertEquals("1", leader.position)
+        assertNotNull(leader.constructor.name)
+        assertTrue(leader.points.toDouble() > 0)
+    }
+
+    @Test
+    fun testRaceResultsJsonIntegrity() {
+        val file = File("src/main/assets/2026_race_results.json")
+        assertTrue("2026_race_results.json must exist in assets", file.exists())
+
+        val content = file.readText()
+        val resultsMap = json.decodeFromString<Map<String, List<RaceResult>>>(content)
+
+        assertTrue("Should contain completed rounds 1 to 12", resultsMap.size >= 12)
+
+        // Check Round 1 classification
+        val round1Results = resultsMap["1"]
+        assertNotNull("Round 1 results should exist", round1Results)
+        assertTrue("Round 1 should have 20+ drivers classified", (round1Results?.size ?: 0) >= 20)
+
+        val winner = round1Results?.first()
+        assertEquals("1", winner?.position)
+        assertEquals("25", winner?.points)
+        assertNotNull(winner?.driver?.fullName)
+        assertNotNull(winner?.constructor?.name)
     }
 }
