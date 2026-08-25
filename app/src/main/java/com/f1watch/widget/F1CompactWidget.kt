@@ -35,8 +35,14 @@ import com.f1watch.data.local.PreferencesManager
 import com.f1watch.data.model.Race
 import com.f1watch.data.repository.F1Repository
 import com.f1watch.domain.CountdownCalculator
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
+import android.content.Intent
 import com.f1watch.ui.theme.TeamColors
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class F1CompactWidget : GlanceAppWidget() {
 
@@ -44,12 +50,15 @@ class F1CompactWidget : GlanceAppWidget() {
         val repository = F1Repository(context)
         val prefs = PreferencesManager(context)
 
-        val nextRace = repository.getNextOrCurrentRace()
-        val countdown = CountdownCalculator.calculate(nextRace)
-        val themeKey = prefs.widgetThemeFlow.first()
-        val opacity = prefs.widgetOpacityFlow.first()
-
         provideContent {
+            val themeKey by prefs.widgetThemeFlow.collectAsState(initial = "f1_red")
+            val opacity by prefs.widgetOpacityFlow.collectAsState(initial = 0.90f)
+
+            val nextRace by produceState<Race?>(initialValue = null) {
+                value = repository.getNextOrCurrentRace()
+            }
+            val countdown = CountdownCalculator.calculate(nextRace)
+
             GlanceTheme {
                 CompactWidgetContent(
                     race = nextRace,
@@ -76,92 +85,112 @@ fun CompactWidgetContent(
     val themeColor = TeamColors.getColor(themeKey)
     val bgColor = Color(0xFF15151E)
 
+    // Outer Box with theme color as border
     Box(
         modifier = GlanceModifier
             .fillMaxSize()
             .cornerRadius(16.dp)
-            .background(bgColor)
-            .padding(12.dp)
-            .clickable(actionStartActivity<MainActivity>())
+            .background(themeColor)
+            .padding(1.5.dp)
     ) {
-        Column(
-            modifier = GlanceModifier.fillMaxSize(),
-            verticalAlignment = Alignment.Top,
-            horizontalAlignment = Alignment.Start
+        // Inner Box with card surface background
+        Box(
+            modifier = GlanceModifier
+                .fillMaxSize()
+                .cornerRadius(14.5.dp)
+                .background(bgColor)
+                .padding(12.dp)
+                .clickable(actionStartActivity<MainActivity>())
         ) {
-            // Header: Flag + Round + Race Name
-            Row(
-                modifier = GlanceModifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+            Column(
+                modifier = GlanceModifier.fillMaxSize(),
+                verticalAlignment = Alignment.Top,
+                horizontalAlignment = Alignment.Start
             ) {
+                // Header: Flag + Round + Race Name
+                Row(
+                    modifier = GlanceModifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = race?.circuit?.flagEmoji ?: "🏁",
+                        style = TextStyle(fontSize = 16.sp)
+                    )
+                    Spacer(modifier = GlanceModifier.width(4.dp))
+                    Text(
+                        text = "R${race?.round ?: "1"} · ${com.f1watch.util.F1Localization.getCountry(race?.circuit?.country ?: "F1")}",
+                        style = TextStyle(
+                            color = ColorProvider(themeColor),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 11.sp
+                        )
+                    )
+                }
+
+                Spacer(modifier = GlanceModifier.height(2.dp))
+
                 Text(
-                    text = race?.circuit?.flagEmoji ?: "🏁",
-                    style = TextStyle(fontSize = 16.sp)
+                    text = com.f1watch.util.F1Localization.getRaceName(race?.raceName ?: "2026 大奖赛"),
+                    maxLines = 1,
+                    style = TextStyle(
+                        color = ColorProvider(Color.White),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp
+                    )
                 )
-                Spacer(modifier = GlanceModifier.width(4.dp))
+
+                Spacer(modifier = GlanceModifier.height(6.dp))
+
+                // Focus area: Big countdown
                 Text(
-                    text = "R${race?.round ?: "1"} · ${com.f1watch.util.F1Localization.getCountry(race?.circuit?.country ?: "F1")}",
+                    text = if (isLive) "LIVE 正在进行" else "正赛倒计时",
+                    style = TextStyle(
+                        color = ColorProvider(Color(0xFFA0A0B2)),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                )
+
+                Spacer(modifier = GlanceModifier.height(1.dp))
+
+                Text(
+                    text = countdown,
+                    style = TextStyle(
+                        color = ColorProvider(if (isLive) Color(0xFF00D26A) else Color.White),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp
+                    )
+                )
+
+                Spacer(modifier = GlanceModifier.height(6.dp))
+
+                // Next Session preview
+                Text(
+                    text = nextSessionText,
+                    maxLines = 1,
                     style = TextStyle(
                         color = ColorProvider(themeColor),
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 11.sp
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Medium
                     )
                 )
             }
-
-            Spacer(modifier = GlanceModifier.height(2.dp))
-
-            Text(
-                text = com.f1watch.util.F1Localization.getRaceName(race?.raceName ?: "2026 大奖赛"),
-                maxLines = 1,
-                style = TextStyle(
-                    color = ColorProvider(Color.White),
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 13.sp
-                )
-            )
-
-            Spacer(modifier = GlanceModifier.height(8.dp))
-
-            // Main Countdown Focus
-            Text(
-                text = if (isLive) "LIVE 正在进行" else "正赛倒计时",
-                style = TextStyle(
-                    color = ColorProvider(Color(0xFFA0A0B2)),
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Medium
-                )
-            )
-
-            Spacer(modifier = GlanceModifier.height(1.dp))
-
-            Text(
-                text = countdown,
-                style = TextStyle(
-                    color = ColorProvider(if (isLive) Color(0xFF00D26A) else Color.White),
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
-                )
-            )
-
-            Spacer(modifier = GlanceModifier.height(6.dp))
-
-            // Next Session preview
-            Text(
-                text = nextSessionText,
-                maxLines = 1,
-                style = TextStyle(
-                    color = ColorProvider(themeColor),
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Medium
-                )
-            )
         }
     }
 }
 
 class F1CompactWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = F1CompactWidget()
+
+    override fun onReceive(context: Context, intent: Intent) {
+        super.onReceive(context, intent)
+        if (intent.action == Intent.ACTION_MY_PACKAGE_REPLACED ||
+            intent.action == "android.appwidget.action.APPWIDGET_UPDATE") {
+            CoroutineScope(Dispatchers.IO).launch {
+                updateAll(context)
+            }
+        }
+    }
 
     companion object {
         suspend fun updateAll(context: Context) {

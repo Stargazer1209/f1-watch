@@ -5,10 +5,12 @@
     android:viewportWidth="360"
     android:viewportHeight="180">
 
-    <!-- Card Background -->
+    <!-- Card Background with Red Border -->
     <path
         android:fillColor="#15151E"
-        android:pathData="M 24,0 H 336 A 24,24 0 0 1 360,24 V 156 A 24,24 0 0 1 336,180 H 24 A 24,24 0 0 1 0,156 V 24 A 24,24 0 0 1 24,0 Z" />
+        android:strokeColor="#E10600"
+        android:strokeWidth="3"
+        android:pathData="M 24,2 H 336 A 22,22 0 0 1 358,24 V 156 A 22,22 0 0 1 336,178 H 24 A 22,22 0 0 1 2,156 V 24 A 22,22 0 0 1 24,2 Z" />
 
     <!-- Top Header: Round + GP Name + Pill -->
     <path

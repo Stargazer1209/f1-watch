@@ -71,18 +71,6 @@ fun ScheduleScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
-    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
-    var hasScrolledToNextRace by remember { mutableStateOf(false) }
-
-    LaunchedEffect(state.nextRace, state.races) {
-        if (!hasScrolledToNextRace && state.nextRace != null && state.races.isNotEmpty()) {
-            val targetIndex = state.races.indexOfFirst { it.round == state.nextRace?.round }
-            if (targetIndex > 0) {
-                listState.animateScrollToItem(targetIndex + 2) // +2 accounts for Hero item and section title
-                hasScrolledToNextRace = true
-            }
-        }
-    }
 
     LaunchedEffect(state.toastMessage) {
         state.toastMessage?.let {
@@ -102,7 +90,6 @@ fun ScheduleScreen(
             }
         } else {
             LazyColumn(
-                state = listState,
                 modifier = Modifier.fillMaxSize()
             ) {
                 // Next Race Hero Card

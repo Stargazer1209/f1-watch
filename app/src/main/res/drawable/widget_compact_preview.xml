@@ -5,10 +5,12 @@
     android:viewportWidth="200"
     android:viewportHeight="200">
 
-    <!-- Card Background -->
+    <!-- Card Background with Red Border -->
     <path
         android:fillColor="#15151E"
-        android:pathData="M 24,0 H 176 A 24,24 0 0 1 200,24 V 176 A 24,24 0 0 1 176,200 H 24 A 24,24 0 0 1 0,176 V 24 A 24,24 0 0 1 24,0 Z" />
+        android:strokeColor="#E10600"
+        android:strokeWidth="3"
+        android:pathData="M 24,2 H 176 A 22,22 0 0 1 198,24 V 176 A 22,22 0 0 1 176,198 H 24 A 22,22 0 0 1 2,176 V 24 A 22,22 0 0 1 24,2 Z" />
 
     <!-- Red Accent Top Bar -->
     <path

@@ -49,7 +49,13 @@ import com.f1watch.domain.CountdownCalculator
 import com.f1watch.ui.theme.TeamColors
 import com.f1watch.ui.util.F1MediaHelper
 import com.f1watch.util.F1Localization
-import kotlinx.coroutines.flow.first
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
+import android.content.Intent
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class F1ScheduleWidget : GlanceAppWidget() {
 
@@ -57,28 +63,32 @@ class F1ScheduleWidget : GlanceAppWidget() {
         val repository = F1Repository(context)
         val prefs = PreferencesManager(context)
 
-        val nextRace = repository.getNextOrCurrentRace()
-        val countdown = CountdownCalculator.calculate(nextRace)
-        val themeKey = prefs.widgetThemeFlow.first()
-        val showPractice = prefs.showPracticeFlow.first()
-
-        // Load circuit vector into software bitmap for Glance RemoteViews
-        val circuitBitmap: Bitmap? = nextRace?.let { race ->
-            try {
-                val mapUrl = F1MediaHelper.getCircuitMapUrl(race.circuit.circuitId)
-                val request = ImageRequest.Builder(context)
-                    .data(mapUrl)
-                    .size(240, 240)
-                    .allowHardware(false)
-                    .build()
-                val result = Coil.imageLoader(context).execute(request)
-                (result.drawable as? BitmapDrawable)?.bitmap ?: result.drawable?.toBitmap(240, 240)
-            } catch (e: Exception) {
-                null
-            }
-        }
-
         provideContent {
+            val themeKey by prefs.widgetThemeFlow.collectAsState(initial = "f1_red")
+            val showPractice by prefs.showPracticeFlow.collectAsState(initial = true)
+
+            val nextRace by produceState<Race?>(initialValue = null) {
+                value = repository.getNextOrCurrentRace()
+            }
+            val countdown = CountdownCalculator.calculate(nextRace)
+
+            val circuitBitmap by produceState<Bitmap?>(initialValue = null, nextRace?.circuit?.circuitId) {
+                value = nextRace?.let { race ->
+                    try {
+                        val mapUrl = F1MediaHelper.getCircuitMapUrl(race.circuit.circuitId)
+                        val request = ImageRequest.Builder(context)
+                            .data(mapUrl)
+                            .size(240, 240)
+                            .allowHardware(false)
+                            .build()
+                        val result = Coil.imageLoader(context).execute(request)
+                        (result.drawable as? BitmapDrawable)?.bitmap ?: result.drawable?.toBitmap(240, 240)
+                    } catch (e: Exception) {
+                        null
+                    }
+                }
+            }
+
             GlanceTheme {
                 ScheduleWidgetContent(
                     race = nextRace,
@@ -106,22 +116,31 @@ fun ScheduleWidgetContent(
     val bgColor = Color(0xFF15151E)
     val surfaceColor = Color(0xFF22222E)
 
+    // Outer Box with theme color as border
     Box(
         modifier = GlanceModifier
             .fillMaxSize()
             .cornerRadius(16.dp)
-            .background(bgColor)
-            .padding(10.dp)
-            .clickable(actionStartActivity<MainActivity>())
+            .background(themeColor)
+            .padding(1.5.dp)
     ) {
-        Column(
-            modifier = GlanceModifier.fillMaxSize()
+        // Inner Box with card surface background
+        Box(
+            modifier = GlanceModifier
+                .fillMaxSize()
+                .cornerRadius(14.5.dp)
+                .background(bgColor)
+                .padding(10.dp)
+                .clickable(actionStartActivity<MainActivity>())
         ) {
-            // Header Row: Flag + Round + Grand Prix Title + Countdown Pill
-            Row(
-                modifier = GlanceModifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+            Column(
+                modifier = GlanceModifier.fillMaxSize()
             ) {
+                // Header Row: Flag + Round + Grand Prix Title + Countdown Pill
+                Row(
+                    modifier = GlanceModifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                 Text(
                     text = race?.circuit?.flagEmoji ?: "🏁",
                     style = TextStyle(fontSize = 15.sp)
@@ -229,6 +248,7 @@ fun ScheduleWidgetContent(
         }
     }
 }
+}
 
 @Composable
 fun SessionRowGlance(
@@ -284,6 +304,16 @@ fun SessionRowGlance(
 
 class F1ScheduleWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = F1ScheduleWidget()
+
+    override fun onReceive(context: Context, intent: Intent) {
+        super.onReceive(context, intent)
+        if (intent.action == Intent.ACTION_MY_PACKAGE_REPLACED ||
+            intent.action == "android.appwidget.action.APPWIDGET_UPDATE") {
+            CoroutineScope(Dispatchers.IO).launch {
+                updateAll(context)
+            }
+        }
+    }
 
     companion object {
         suspend fun updateAll(context: Context) {

@@ -195,7 +195,7 @@ fun SettingsScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) { page ->
                         if (page == 0) {
-                            // 2x2 Mini Square Preview (1:1 Ratio, Centered, No Border to align with desktop widget)
+                            // 2x2 Mini Square Preview (1:1 Ratio, Centered, with Theme Color Border matching desktop widget)
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -207,6 +207,7 @@ fun SettingsScreen(
                                         .size(156.dp)
                                         .clip(RoundedCornerShape(16.dp))
                                         .background(Color(0xFF15151E))
+                                        .border(1.5.dp, selectedColor, RoundedCornerShape(16.dp))
                                         .padding(12.dp)
                                 ) {
                                     Column(
@@ -271,13 +272,14 @@ fun SettingsScreen(
                                 }
                             }
                         } else {
-                            // 2x4 Full Weekend Preview with Track Map (No Border to align with desktop widget)
+                            // 2x4 Full Weekend Preview with Track Map (with Theme Color Border matching desktop widget)
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(155.dp)
                                     .clip(RoundedCornerShape(16.dp))
                                     .background(Color(0xFF15151E))
+                                    .border(1.5.dp, selectedColor, RoundedCornerShape(16.dp))
                                     .padding(12.dp)
                             ) {
                                 Column(modifier = Modifier.fillMaxSize()) {
