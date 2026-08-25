@@ -393,21 +393,22 @@ fun ConstructorStandingRow(standing: ConstructorStanding) {
 
             Spacer(modifier = Modifier.height(6.dp))
 
-            // Large Panoramic Car Livery Image (Responsive Aspect Ratio)
+            // Large Panoramic Car Livery Image (Responsive Crop Blank Padding)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .aspectRatio(3.6f)
+                    .aspectRatio(4.0f)
                     .clip(RoundedCornerShape(8.dp))
-                    .background(Color(0xFF0C0C12))
-                    .padding(horizontal = 4.dp, vertical = 2.dp),
+                    .background(Color(0xFF0C0C12)),
                 contentAlignment = Alignment.Center
             ) {
                 coil.compose.AsyncImage(
                     model = com.f1watch.ui.util.F1MediaHelper.getCarImageUrl(standing.constructor.constructorId),
                     contentDescription = standing.constructor.name,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = androidx.compose.ui.layout.ContentScale.Fit
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1.0f),
+                    contentScale = androidx.compose.ui.layout.ContentScale.FillWidth
                 )
             }
         }
