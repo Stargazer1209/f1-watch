@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">F1 Watch</string>
+    <string name="tab_schedule">赛历</string>
+    <string name="tab_results">比赛结果</string>
+    <string name="tab_standings">车手/车队</string>
+    
+    <string name="widget_compact_title">F1 倒计时卡片 (2x2)</string>
+    <string name="widget_compact_desc">显示下一场大奖赛国旗、赛道、正赛倒计时与下一阶段时间</string>
+    <string name="widget_schedule_title">F1 周末赛程表 (2x4)</string>
+    <string name="widget_schedule_desc">全览下场大奖赛所有练习赛、排位赛、冲刺赛与正赛时间表</string>
+
+    <string name="calendar_sync_title">添加到系统日历</string>
+    <string name="calendar_sync_success">已成功添加到系统日历</string>
+    <string name="calendar_sync_fail">日历写入失败，请检查日历权限</string>
+</resources>

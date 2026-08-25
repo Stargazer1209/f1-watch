@@ -1,0 +1,55 @@
+# Gradle
+.gradle/
+build/
+**/build/
+
+# Android Studio & IntelliJ IDEA
+.idea/
+*.iml
+.cxx/
+.navigation/
+captures/
+output.json
+
+# Local configuration and tools
+local.properties
+.tools/
+
+# Kotlin
+.kotlin/
+kotlin-js-store/
+
+# Android / Signing
+*.apk
+*.ap_
+*.aab
+*.dex
+*.class
+*.keystore
+*.jks
+*.key
+
+# VS Code / Eclipse
+.vscode/
+.project
+.classpath
+.settings/
+
+# Python / Environment
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+.pytest_cache/
+.ruff_cache/
+
+# OS Specific
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Logs
+*.log
