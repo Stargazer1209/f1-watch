@@ -105,6 +105,35 @@ object F1MediaHelper {
         return "$F1DB_SVG_BASE/$slug-1.svg"
     }
 
+    private val driverSurnameMap = mapOf(
+        "verstappen" to "VER",
+        "hamilton" to "HAM",
+        "leclerc" to "LEC",
+        "norris" to "NOR",
+        "russell" to "RUS",
+        "piastri" to "PIA",
+        "alonso" to "ALO",
+        "sainz" to "SAI",
+        "albon" to "ALB",
+        "gasly" to "GAS",
+        "ocon" to "OCO",
+        "tsunoda" to "TSU",
+        "hulkenberg" to "HUL",
+        "hülkenberg" to "HUL",
+        "stroll" to "STR",
+        "lawson" to "LAW",
+        "bearman" to "BEA",
+        "colapinto" to "COL",
+        "antonelli" to "ANT",
+        "lindblad" to "LIN",
+        "bortoleto" to "BOR",
+        "hadjar" to "HAD",
+        "doohan" to "DOO",
+        "perez" to "PER",
+        "pérez" to "PER",
+        "bottas" to "BOT"
+    )
+
     /**
      * Map driver code or familyName to TheSportsDB Cloudflare R2 transparent cutout portrait.
      * Tier 1: Static hardcoded map (instant O(1) offline fallback)
@@ -118,10 +147,15 @@ object F1MediaHelper {
             return mappedUrl
         }
 
-        // Fuzzy match by driver full name
-        val lower = driverFullName.lowercase()
-        for ((code, url) in driverCutoutMap) {
-            if (code.lowercase() in lower) return url
+        // Match by driver surname in driverFullName
+        if (driverFullName.isNotBlank()) {
+            val lower = driverFullName.lowercase()
+            for ((surname, code) in driverSurnameMap) {
+                if (lower.contains(surname)) {
+                    val url = driverCutoutMap[code]
+                    if (url != null) return url
+                }
+            }
         }
 
         // Tier 2: Check in-memory / disk cache from DriverMediaResolver

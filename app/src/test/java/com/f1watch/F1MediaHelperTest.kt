@@ -130,5 +130,17 @@ class F1MediaHelperTest {
         val matched = com.f1watch.data.media.DriverMediaResolver.findMatchingCutout(players)
         org.junit.Assert.assertEquals("https://cutout_racing.png", matched)
     }
+
+    @Test
+    fun testDriverFullNameMatching() {
+        val perezUrl = F1MediaHelper.getDriverHeadshotUrl("", "Sergio Perez")
+        assertTrue("Perez by full name should resolve", perezUrl.contains("r2.thesportsdb.com/images/media/player/render/"))
+
+        val bottasUrl = F1MediaHelper.getDriverHeadshotUrl("", "Valtteri Bottas")
+        assertTrue("Bottas by full name should resolve", bottasUrl.contains("r2.thesportsdb.com/images/media/player/cutout/"))
+
+        val verstappenUrl = F1MediaHelper.getDriverHeadshotUrl("", "Max Verstappen")
+        assertTrue("Verstappen by full name should resolve", verstappenUrl.contains("r2.thesportsdb.com/images/media/player/cutout/"))
+    }
 }
 
