@@ -54,6 +54,12 @@ class F1MediaHelperTest {
 
         val verUrl = F1MediaHelper.getDriverHeadshotUrl("VER")
         assertTrue("Verstappen URL should point to TheSportsDB R2 cutout", verUrl.contains("r2.thesportsdb.com/images/media/player/cutout/"))
+
+        val perUrl = F1MediaHelper.getDriverHeadshotUrl("PER")
+        assertTrue("Perez URL should point to TheSportsDB R2 render", perUrl.contains("r2.thesportsdb.com/images/media/player/render/"))
+
+        val botUrl = F1MediaHelper.getDriverHeadshotUrl("BOT")
+        assertTrue("Bottas URL should point to TheSportsDB R2 cutout", botUrl.contains("r2.thesportsdb.com/images/media/player/cutout/"))
     }
 
     @Test

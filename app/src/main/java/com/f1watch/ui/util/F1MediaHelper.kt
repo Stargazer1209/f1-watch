@@ -27,7 +27,9 @@ object F1MediaHelper {
         "LIN" to "https://r2.thesportsdb.com/images/media/player/cutout/fspuvx1770026197.png",
         "BOR" to "https://r2.thesportsdb.com/images/media/player/cutout/dw6mi31773160637.png",
         "HAD" to "https://r2.thesportsdb.com/images/media/player/cutout/ifqmow1772534127.png",
-        "DOO" to "https://r2.thesportsdb.com/images/media/player/cutout/4bbck31740659318.png"
+        "DOO" to "https://r2.thesportsdb.com/images/media/player/cutout/4bbck31740659318.png",
+        "PER" to "https://r2.thesportsdb.com/images/media/player/render/ko0ume1772535592.png",
+        "BOT" to "https://r2.thesportsdb.com/images/media/player/cutout/kf5lq01772535017.png"
     )
 
     // TheSportsDB Official High-Definition Car Equipment (Transparent Side-view)
