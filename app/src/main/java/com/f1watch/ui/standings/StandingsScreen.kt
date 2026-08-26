@@ -247,26 +247,13 @@ fun DriverStandingRow(standing: DriverStanding) {
 
         Spacer(modifier = Modifier.width(8.dp))
 
-        val headshotUrl by com.f1watch.ui.util.F1MediaHelper.rememberDriverHeadshotUrl(
+        // Driver Headshot Avatar (with graceful fallback)
+        com.f1watch.ui.components.DriverAvatar(
             driverCode = standing.driver.code.ifEmpty { standing.driver.familyName },
-            driverFullName = standing.driver.fullName
+            driverFullName = standing.driver.fullName,
+            teamColor = teamColor,
+            size = 32.dp
         )
-
-        // Driver Headshot Avatar
-        Box(
-            modifier = Modifier
-                .size(32.dp)
-                .clip(CircleShape)
-                .background(F1CardSurface),
-            contentAlignment = Alignment.Center
-        ) {
-            coil.compose.AsyncImage(
-                model = headshotUrl,
-                contentDescription = localizedDriverName,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = androidx.compose.ui.layout.ContentScale.Crop
-            )
-        }
 
         Spacer(modifier = Modifier.width(10.dp))
 
@@ -413,24 +400,12 @@ fun ConstructorStandingRow(standing: ConstructorStanding) {
 
             Spacer(modifier = Modifier.height(6.dp))
 
-            // Large Panoramic Car Livery Image (Responsive Crop Blank Padding)
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(4.0f)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(Color(0xFF0C0C12)),
-                contentAlignment = Alignment.Center
-            ) {
-                coil.compose.AsyncImage(
-                    model = com.f1watch.ui.util.F1MediaHelper.getCarImageUrl(standing.constructor.constructorId),
-                    contentDescription = standing.constructor.name,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(1.0f),
-                    contentScale = androidx.compose.ui.layout.ContentScale.FillWidth
-                )
-            }
+            // Large Panoramic Car Livery Image (with graceful fallback)
+            com.f1watch.ui.components.CarLiveryCard(
+                constructorId = standing.constructor.constructorId,
+                constructorName = localizedTeamName,
+                teamColor = teamColor
+            )
         }
     }
 }

@@ -264,48 +264,12 @@ fun RaceCardItem(
                     HorizontalDivider(color = F1CardBorder, thickness = 0.5.dp)
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    // High-Impact Track Outline Card (Responsive Aspect Ratio)
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(2.0f)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(F1Dark)
-                            .border(1.dp, F1CardBorder, RoundedCornerShape(12.dp))
-                            .padding(8.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        coil.compose.AsyncImage(
-                            model = com.f1watch.ui.util.F1MediaHelper.getCircuitMapUrl(race.circuit.circuitId),
-                            contentDescription = race.circuit.circuitName,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(top = 28.dp, bottom = 4.dp, start = 8.dp, end = 8.dp),
-                            contentScale = androidx.compose.ui.layout.ContentScale.Fit
-                        )
-                        // Location badge top-left
-                        Row(
-                            modifier = Modifier
-                                .align(Alignment.TopStart)
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(F1CardSurface.copy(alpha = 0.9f))
-                                .padding(horizontal = 8.dp, vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "🏁 ${F1Localization.getCircuitName(race.circuit.circuitName)}",
-                                color = F1TextWhite,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 11.sp
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "· ${F1Localization.getLocality(race.circuit.locality)}",
-                                color = F1TextSecondary,
-                                fontSize = 10.sp
-                            )
-                        }
-                    }
+                    // High-Impact Track Outline Card (Responsive Aspect Ratio with Graceful Fallback)
+                    com.f1watch.ui.components.CircuitMapCard(
+                        circuitId = race.circuit.circuitId,
+                        circuitName = race.circuit.circuitName,
+                        locality = race.circuit.locality
+                    )
 
                     Spacer(modifier = Modifier.height(12.dp))
 

@@ -323,30 +323,19 @@ fun PodiumStep(result: RaceResult, position: String, color: Color, height: Int) 
     val localizedDriverName = com.f1watch.util.F1Localization.getDriverName(result.driver.fullName)
     val localizedTeamName = com.f1watch.util.F1Localization.getConstructorName(result.constructor.name)
 
-    val headshotUrl by com.f1watch.ui.util.F1MediaHelper.rememberDriverHeadshotUrl(
-        driverCode = result.driver.code.ifEmpty { result.driver.familyName },
-        driverFullName = result.driver.fullName
-    )
-
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.width(96.dp)
     ) {
-        Box(
-            modifier = Modifier
-                .size(38.dp)
-                .clip(CircleShape)
-                .background(F1CardSurface)
-                .border(1.dp, color, CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            coil.compose.AsyncImage(
-                model = headshotUrl,
-                contentDescription = localizedDriverName,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = androidx.compose.ui.layout.ContentScale.Crop
-            )
-        }
+        // Podium Driver Avatar with team/rank colored border & fallback
+        com.f1watch.ui.components.DriverAvatar(
+            driverCode = result.driver.code.ifEmpty { result.driver.familyName },
+            driverFullName = result.driver.fullName,
+            teamColor = teamColor,
+            size = 38.dp,
+            borderWidth = 1.5.dp,
+            borderColor = color
+        )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = localizedDriverName,
@@ -433,28 +422,13 @@ fun ResultRowItem(result: RaceResult) {
                 .background(teamColor)
         )
 
-        Spacer(modifier = Modifier.width(8.dp))
-
-        val headshotUrl by com.f1watch.ui.util.F1MediaHelper.rememberDriverHeadshotUrl(
+        // Driver Headshot with graceful fallback
+        com.f1watch.ui.components.DriverAvatar(
             driverCode = result.driver.code.ifEmpty { result.driver.familyName },
-            driverFullName = result.driver.fullName
+            driverFullName = result.driver.fullName,
+            teamColor = teamColor,
+            size = 32.dp
         )
-
-        // Driver Headshot
-        Box(
-            modifier = Modifier
-                .size(32.dp)
-                .clip(CircleShape)
-                .background(F1CardSurface),
-            contentAlignment = Alignment.Center
-        ) {
-            coil.compose.AsyncImage(
-                model = headshotUrl,
-                contentDescription = localizedDriverName,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = androidx.compose.ui.layout.ContentScale.Crop
-            )
-        }
 
         Spacer(modifier = Modifier.width(8.dp))
 

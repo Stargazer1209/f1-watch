@@ -32,6 +32,10 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import coil.compose.SubcomposeAsyncImage
+import coil.compose.SubcomposeAsyncImageContent
+import coil.compose.AsyncImagePainter
+import coil.compose.AsyncImage
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -282,48 +286,12 @@ fun HeroNextRaceCard(
             // Expandable Sessions List directly inside Hero Card!
             AnimatedVisibility(visible = isExpanded) {
                 Column(modifier = Modifier.padding(top = 14.dp)) {
-                    // High-Impact Track Outline Card (Responsive Aspect Ratio)
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(2.0f)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(F1Dark)
-                            .border(1.dp, F1CardBorder, RoundedCornerShape(12.dp))
-                            .padding(8.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        coil.compose.AsyncImage(
-                            model = com.f1watch.ui.util.F1MediaHelper.getCircuitMapUrl(race.circuit.circuitId),
-                            contentDescription = race.circuit.circuitName,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(top = 28.dp, bottom = 4.dp, start = 8.dp, end = 8.dp),
-                            contentScale = androidx.compose.ui.layout.ContentScale.Fit
-                        )
-                        // Location badge top-left
-                        Row(
-                            modifier = Modifier
-                                .align(Alignment.TopStart)
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(F1CardSurface.copy(alpha = 0.9f))
-                                .padding(horizontal = 8.dp, vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "🏁 ${com.f1watch.util.F1Localization.getCircuitName(race.circuit.circuitName)}",
-                                color = F1TextWhite,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 11.sp
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "· ${com.f1watch.util.F1Localization.getLocality(race.circuit.locality)}",
-                                color = F1TextSecondary,
-                                fontSize = 10.sp
-                            )
-                        }
-                    }
+                    // High-Impact Track Outline Card with graceful fallback
+                    CircuitMapCard(
+                        circuitId = race.circuit.circuitId,
+                        circuitName = race.circuit.circuitName,
+                        locality = race.circuit.locality
+                    )
 
                     Spacer(modifier = Modifier.height(12.dp))
 
@@ -374,6 +342,219 @@ fun HeroNextRaceCard(
                         Spacer(modifier = Modifier.height(6.dp))
                     }
                 }
+            }
+        }
+    }
+}
+
+/**
+ * 车手头像优雅降级组件：加载失败或无网络时显示车手3字母代码与车队色彩底晕，替代单一空白圆
+ */
+@Composable
+fun DriverAvatar(
+    driverCode: String,
+    driverFullName: String,
+    teamColor: Color,
+    modifier: Modifier = Modifier,
+    size: androidx.compose.ui.unit.Dp = 32.dp,
+    borderWidth: androidx.compose.ui.unit.Dp = 0.dp,
+    borderColor: Color = Color.Transparent
+) {
+    val headshotUrl by com.f1watch.ui.util.F1MediaHelper.rememberDriverHeadshotUrl(
+        driverCode = driverCode,
+        driverFullName = driverFullName
+    )
+
+    val codeText = driverCode.take(3).uppercase().ifEmpty {
+        driverFullName.split(" ").lastOrNull()?.take(3)?.uppercase() ?: "DRV"
+    }
+
+    Box(
+        modifier = modifier
+            .size(size)
+            .clip(CircleShape)
+            .background(F1CardSurface)
+            .then(if (borderWidth > 0.dp) Modifier.border(borderWidth, borderColor, CircleShape) else Modifier),
+        contentAlignment = Alignment.Center
+    ) {
+        if (headshotUrl.isNotEmpty()) {
+            SubcomposeAsyncImage(
+                model = headshotUrl,
+                contentDescription = driverFullName,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop
+            ) {
+                val state = painter.state
+                if (state is AsyncImagePainter.State.Success) {
+                    SubcomposeAsyncImageContent()
+                } else {
+                    DriverAvatarFallback(codeText = codeText, teamColor = teamColor)
+                }
+            }
+        } else {
+            DriverAvatarFallback(codeText = codeText, teamColor = teamColor)
+        }
+    }
+}
+
+@Composable
+private fun DriverAvatarFallback(
+    codeText: String,
+    teamColor: Color
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(teamColor.copy(alpha = 0.25f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = codeText,
+            color = F1TextWhite,
+            fontWeight = FontWeight.Black,
+            fontSize = 11.sp,
+            letterSpacing = (-0.5).sp
+        )
+    }
+}
+
+/**
+ * 赛车涂装优雅降级组件：加载失败或无网络时显示车队半透明 Logo 与队名，替代单一黑色暗盒
+ */
+@Composable
+fun CarLiveryCard(
+    constructorId: String,
+    constructorName: String,
+    teamColor: Color,
+    modifier: Modifier = Modifier
+) {
+    val carUrl = com.f1watch.ui.util.F1MediaHelper.getCarImageUrl(constructorId)
+    val badgeUrl = com.f1watch.ui.util.F1MediaHelper.getTeamBadgeUrl(constructorId)
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .aspectRatio(4.0f)
+            .clip(RoundedCornerShape(8.dp))
+            .background(Color(0xFF0C0C12)),
+        contentAlignment = Alignment.Center
+    ) {
+        SubcomposeAsyncImage(
+            model = carUrl,
+            contentDescription = constructorName,
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(1.0f),
+            contentScale = androidx.compose.ui.layout.ContentScale.FillWidth
+        ) {
+            val state = painter.state
+            if (state is AsyncImagePainter.State.Success) {
+                SubcomposeAsyncImageContent()
+            } else {
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    AsyncImage(
+                        model = badgeUrl,
+                        contentDescription = constructorName,
+                        modifier = Modifier.size(36.dp),
+                        alpha = 0.4f
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = constructorName,
+                        color = teamColor.copy(alpha = 0.6f),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 赛道地图优雅降级组件：加载失败或无网络时显示方格旗与赛道名称，替代单调空白区域
+ */
+@Composable
+fun CircuitMapCard(
+    circuitId: String,
+    circuitName: String,
+    locality: String = "",
+    modifier: Modifier = Modifier
+) {
+    val mapUrl = com.f1watch.ui.util.F1MediaHelper.getCircuitMapUrl(circuitId)
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .aspectRatio(2.0f)
+            .clip(RoundedCornerShape(12.dp))
+            .background(F1Dark)
+            .border(1.dp, F1CardBorder, RoundedCornerShape(12.dp))
+            .padding(8.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        SubcomposeAsyncImage(
+            model = mapUrl,
+            contentDescription = circuitName,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = 28.dp, bottom = 4.dp, start = 8.dp, end = 8.dp),
+            contentScale = androidx.compose.ui.layout.ContentScale.Fit
+        ) {
+            val state = painter.state
+            if (state is AsyncImagePainter.State.Success) {
+                SubcomposeAsyncImageContent()
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(top = 24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "🏁",
+                        fontSize = 24.sp
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = com.f1watch.util.F1Localization.getCircuitName(circuitName),
+                        color = F1TextSecondary,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        }
+
+        // Location badge top-left
+        Row(
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .clip(RoundedCornerShape(6.dp))
+                .background(F1CardSurface.copy(alpha = 0.9f))
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "🏁 ${com.f1watch.util.F1Localization.getCircuitName(circuitName)}",
+                color = F1TextWhite,
+                fontWeight = FontWeight.Bold,
+                fontSize = 11.sp
+            )
+            if (locality.isNotBlank()) {
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "· ${com.f1watch.util.F1Localization.getLocality(locality)}",
+                    color = F1TextSecondary,
+                    fontSize = 10.sp
+                )
             }
         }
     }
