@@ -323,6 +323,11 @@ fun PodiumStep(result: RaceResult, position: String, color: Color, height: Int) 
     val localizedDriverName = com.f1watch.util.F1Localization.getDriverName(result.driver.fullName)
     val localizedTeamName = com.f1watch.util.F1Localization.getConstructorName(result.constructor.name)
 
+    val headshotUrl by com.f1watch.ui.util.F1MediaHelper.rememberDriverHeadshotUrl(
+        driverCode = result.driver.code.ifEmpty { result.driver.familyName },
+        driverFullName = result.driver.fullName
+    )
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.width(96.dp)
@@ -336,7 +341,7 @@ fun PodiumStep(result: RaceResult, position: String, color: Color, height: Int) 
             contentAlignment = Alignment.Center
         ) {
             coil.compose.AsyncImage(
-                model = com.f1watch.ui.util.F1MediaHelper.getDriverHeadshotUrl(result.driver.code.ifEmpty { result.driver.familyName }),
+                model = headshotUrl,
                 contentDescription = localizedDriverName,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = androidx.compose.ui.layout.ContentScale.Crop
@@ -430,6 +435,11 @@ fun ResultRowItem(result: RaceResult) {
 
         Spacer(modifier = Modifier.width(8.dp))
 
+        val headshotUrl by com.f1watch.ui.util.F1MediaHelper.rememberDriverHeadshotUrl(
+            driverCode = result.driver.code.ifEmpty { result.driver.familyName },
+            driverFullName = result.driver.fullName
+        )
+
         // Driver Headshot
         Box(
             modifier = Modifier
@@ -439,7 +449,7 @@ fun ResultRowItem(result: RaceResult) {
             contentAlignment = Alignment.Center
         ) {
             coil.compose.AsyncImage(
-                model = com.f1watch.ui.util.F1MediaHelper.getDriverHeadshotUrl(result.driver.code.ifEmpty { result.driver.familyName }),
+                model = headshotUrl,
                 contentDescription = localizedDriverName,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = androidx.compose.ui.layout.ContentScale.Crop

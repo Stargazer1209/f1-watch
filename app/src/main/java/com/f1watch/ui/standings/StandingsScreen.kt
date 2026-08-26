@@ -247,6 +247,11 @@ fun DriverStandingRow(standing: DriverStanding) {
 
         Spacer(modifier = Modifier.width(8.dp))
 
+        val headshotUrl by com.f1watch.ui.util.F1MediaHelper.rememberDriverHeadshotUrl(
+            driverCode = standing.driver.code.ifEmpty { standing.driver.familyName },
+            driverFullName = standing.driver.fullName
+        )
+
         // Driver Headshot Avatar
         Box(
             modifier = Modifier
@@ -256,7 +261,7 @@ fun DriverStandingRow(standing: DriverStanding) {
             contentAlignment = Alignment.Center
         ) {
             coil.compose.AsyncImage(
-                model = com.f1watch.ui.util.F1MediaHelper.getDriverHeadshotUrl(standing.driver.code.ifEmpty { standing.driver.familyName }),
+                model = headshotUrl,
                 contentDescription = localizedDriverName,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = androidx.compose.ui.layout.ContentScale.Crop

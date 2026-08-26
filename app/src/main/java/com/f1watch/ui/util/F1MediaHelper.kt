@@ -1,5 +1,10 @@
 package com.f1watch.ui.util
 
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
+import androidx.compose.runtime.produceState
+import com.f1watch.data.media.DriverMediaResolver
+
 object F1MediaHelper {
 
     private const val F1DB_SVG_BASE = "https://cdn.jsdelivr.net/gh/f1db/f1db@main/src/assets/circuits/white-outline"
@@ -101,7 +106,10 @@ object F1MediaHelper {
     }
 
     /**
-     * Map driver code or familyName to TheSportsDB Cloudflare R2 transparent cutout portrait
+     * Map driver code or familyName to TheSportsDB Cloudflare R2 transparent cutout portrait.
+     * Tier 1: Static hardcoded map (instant O(1) offline fallback)
+     * Tier 2: Persistent disk & memory cache resolved previously
+     * Fallback: Empty string if not yet cached (triggers native team badge placeholder in UI)
      */
     fun getDriverHeadshotUrl(driverCode: String, driverFullName: String = ""): String {
         val codeUpper = driverCode.trim().uppercase()
@@ -116,8 +124,49 @@ object F1MediaHelper {
             if (code.lowercase() in lower) return url
         }
 
+        // Tier 2: Check in-memory / disk cache from DriverMediaResolver
+        DriverMediaResolver.getCachedUrl(codeUpper)?.takeIf { it.isNotEmpty() }?.let {
+            return it
+        }
+        if (driverFullName.isNotEmpty()) {
+            DriverMediaResolver.getCachedUrl(driverFullName)?.takeIf { it.isNotEmpty() }?.let {
+                return it
+            }
+        }
+
         // Fallback to empty string to trigger Compose native team badge avatar
         return ""
+    }
+
+    /**
+     * Composable helper that synchronously loads known/cached driver headshots immediately with zero latency,
+     * and asynchronously queries TheSportsDB API if the driver is not yet cached, seamlessly updating the state.
+     */
+    @Composable
+    fun rememberDriverHeadshotUrl(
+        driverCode: String,
+        driverFullName: String = ""
+    ): State<String> {
+        val initialUrl = getDriverHeadshotUrl(driverCode, driverFullName)
+        return produceState(initialValue = initialUrl, key1 = driverCode, key2 = driverFullName) {
+            if (value.isEmpty()) {
+                val resolved = DriverMediaResolver.resolveDriverHeadshot(driverCode, driverFullName)
+                if (resolved.isNotEmpty()) {
+                    value = resolved
+                }
+            }
+        }
+    }
+
+    /**
+     * Suspend resolver function for coroutine / ViewModel contexts.
+     */
+    suspend fun resolveDriverHeadshotUrl(driverCode: String, driverFullName: String = ""): String {
+        val syncUrl = getDriverHeadshotUrl(driverCode, driverFullName)
+        if (syncUrl.isNotEmpty()) {
+            return syncUrl
+        }
+        return DriverMediaResolver.resolveDriverHeadshot(driverCode, driverFullName)
     }
 
     /**

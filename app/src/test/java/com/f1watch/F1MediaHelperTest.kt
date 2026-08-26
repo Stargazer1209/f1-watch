@@ -88,4 +88,47 @@ class F1MediaHelperTest {
         val audiBadge = F1MediaHelper.getTeamBadgeUrl("audi")
         assertTrue(audiBadge.contains("r2.thesportsdb.com/images/media/team/badge/"))
     }
+
+    @Test
+    fun testDriverHeadshotFallbackAndCacheResolution() {
+        com.f1watch.data.media.DriverMediaResolver.clearCacheForTest()
+
+        // 1. Unknown driver not in static map or cache returns empty string
+        val unknownBeforeCache = F1MediaHelper.getDriverHeadshotUrl("XYZ_UNKNOWN", "Unknown Driver")
+        org.junit.Assert.assertEquals("", unknownBeforeCache)
+
+        // 2. Put resolved URL in DriverMediaResolver cache (simulating async resolver completion)
+        val mockCutoutUrl = "https://r2.thesportsdb.com/images/media/player/cutout/mock_cutout.png"
+        com.f1watch.data.media.DriverMediaResolver.putInMemoryCacheForTest("XYZ_UNKNOWN", mockCutoutUrl)
+
+        // 3. F1MediaHelper synchronous query now hits Tier 2 cache immediately
+        val unknownAfterCache = F1MediaHelper.getDriverHeadshotUrl("XYZ_UNKNOWN", "Unknown Driver")
+        org.junit.Assert.assertEquals(mockCutoutUrl, unknownAfterCache)
+
+        com.f1watch.data.media.DriverMediaResolver.clearCacheForTest()
+    }
+
+    @Test
+    fun testCutoutMatchingLogic() {
+        val players = listOf(
+            com.f1watch.data.media.TheSportsDbPlayerItem(
+                idPlayer = "1",
+                strPlayer = "Some Footballer",
+                strSport = "Soccer",
+                strTeam = "FC Barcelona",
+                strCutout = "https://cutout_football.png"
+            ),
+            com.f1watch.data.media.TheSportsDbPlayerItem(
+                idPlayer = "2",
+                strPlayer = "Rookie Driver",
+                strSport = "Motorsport",
+                strTeam = "Scuderia Ferrari",
+                strCutout = "https://cutout_racing.png"
+            )
+        )
+
+        val matched = com.f1watch.data.media.DriverMediaResolver.findMatchingCutout(players)
+        org.junit.Assert.assertEquals("https://cutout_racing.png", matched)
+    }
 }
+

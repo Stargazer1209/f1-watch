@@ -17,6 +17,9 @@ class F1WatchApplication : Application(), ImageLoaderFactory {
 
     override fun onCreate() {
         super.onCreate()
+        // Initialize media resolver disk cache
+        com.f1watch.data.media.DriverMediaResolver.initialize(this)
+
         // Schedule background periodic sync for F1 schedule and widgets
         F1SyncWorker.schedulePeriodicSync(this)
 
