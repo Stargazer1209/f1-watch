@@ -118,104 +118,104 @@ fun MainAppContainer(
                 }
             )
         } else {
-            Scaffold(
-                topBar = {
-                    F1TopBar(
-                        title = tabTitles[currentTab],
-                        onOpenCustomizer = { isSettingsOpen = true }
-                    )
-                },
-                bottomBar = {
-                    NavigationBar(
-                        containerColor = F1CardBg,
-                        tonalElevation = 8.dp
+            AmbientGlowBackground(themeColor = themeColor) {
+                Scaffold(
+                    topBar = {
+                        F1TopBar(
+                            title = tabTitles[currentTab],
+                            onOpenCustomizer = { isSettingsOpen = true }
+                        )
+                    },
+                    bottomBar = {
+                        NavigationBar(
+                            containerColor = F1CardBg,
+                            tonalElevation = 8.dp
+                        ) {
+                            NavigationBarItem(
+                                selected = currentTab == 0,
+                                onClick = { currentTab = 0 },
+                                icon = { Icon(Icons.Default.Home, contentDescription = "首页大本营") },
+                                label = {
+                                    Text(
+                                        text = "首页",
+                                        fontWeight = if (currentTab == 0) FontWeight.Bold else FontWeight.Normal,
+                                        fontSize = 12.sp
+                                    )
+                                },
+                                colors = NavigationBarItemDefaults.colors(
+                                    selectedIconColor = themeColor,
+                                    selectedTextColor = themeColor,
+                                    indicatorColor = themeColor.copy(alpha = 0.15f),
+                                    unselectedIconColor = F1TextMuted,
+                                    unselectedTextColor = F1TextMuted
+                                )
+                            )
+                            NavigationBarItem(
+                                selected = currentTab == 1,
+                                onClick = { currentTab = 1 },
+                                icon = { Icon(Icons.Default.CalendarMonth, contentDescription = "赛历") },
+                                label = {
+                                    Text(
+                                        text = "赛历",
+                                        fontWeight = if (currentTab == 1) FontWeight.Bold else FontWeight.Normal,
+                                        fontSize = 12.sp
+                                    )
+                                },
+                                colors = NavigationBarItemDefaults.colors(
+                                    selectedIconColor = themeColor,
+                                    selectedTextColor = themeColor,
+                                    indicatorColor = themeColor.copy(alpha = 0.15f),
+                                    unselectedIconColor = F1TextMuted,
+                                    unselectedTextColor = F1TextMuted
+                                )
+                            )
+                            NavigationBarItem(
+                                selected = currentTab == 2,
+                                onClick = { currentTab = 2 },
+                                icon = { Icon(Icons.Default.EmojiEvents, contentDescription = "比赛结果") },
+                                label = {
+                                    Text(
+                                        text = "赛果",
+                                        fontWeight = if (currentTab == 2) FontWeight.Bold else FontWeight.Normal,
+                                        fontSize = 12.sp
+                                    )
+                                },
+                                colors = NavigationBarItemDefaults.colors(
+                                    selectedIconColor = themeColor,
+                                    selectedTextColor = themeColor,
+                                    indicatorColor = themeColor.copy(alpha = 0.15f),
+                                    unselectedIconColor = F1TextMuted,
+                                    unselectedTextColor = F1TextMuted
+                                )
+                            )
+                            NavigationBarItem(
+                                selected = currentTab == 3,
+                                onClick = { currentTab = 3 },
+                                icon = { Icon(Icons.Default.Groups, contentDescription = "车手与车队") },
+                                label = {
+                                    Text(
+                                        text = "积分榜",
+                                        fontWeight = if (currentTab == 3) FontWeight.Bold else FontWeight.Normal,
+                                        fontSize = 12.sp
+                                    )
+                                },
+                                colors = NavigationBarItemDefaults.colors(
+                                    selectedIconColor = themeColor,
+                                    selectedTextColor = themeColor,
+                                    indicatorColor = themeColor.copy(alpha = 0.15f),
+                                    unselectedIconColor = F1TextMuted,
+                                    unselectedTextColor = F1TextMuted
+                                )
+                            )
+                        }
+                    },
+                    containerColor = Color.Transparent
+                ) { innerPadding ->
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(innerPadding)
                     ) {
-                        NavigationBarItem(
-                            selected = currentTab == 0,
-                            onClick = { currentTab = 0 },
-                            icon = { Icon(Icons.Default.Home, contentDescription = "首页大本营") },
-                            label = {
-                                Text(
-                                    text = "首页",
-                                    fontWeight = if (currentTab == 0) FontWeight.Bold else FontWeight.Normal,
-                                    fontSize = 12.sp
-                                )
-                            },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = themeColor,
-                                selectedTextColor = themeColor,
-                                indicatorColor = themeColor.copy(alpha = 0.15f),
-                                unselectedIconColor = F1TextMuted,
-                                unselectedTextColor = F1TextMuted
-                            )
-                        )
-                        NavigationBarItem(
-                            selected = currentTab == 1,
-                            onClick = { currentTab = 1 },
-                            icon = { Icon(Icons.Default.CalendarMonth, contentDescription = "赛历") },
-                            label = {
-                                Text(
-                                    text = "赛历",
-                                    fontWeight = if (currentTab == 1) FontWeight.Bold else FontWeight.Normal,
-                                    fontSize = 12.sp
-                                )
-                            },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = themeColor,
-                                selectedTextColor = themeColor,
-                                indicatorColor = themeColor.copy(alpha = 0.15f),
-                                unselectedIconColor = F1TextMuted,
-                                unselectedTextColor = F1TextMuted
-                            )
-                        )
-                        NavigationBarItem(
-                            selected = currentTab == 2,
-                            onClick = { currentTab = 2 },
-                            icon = { Icon(Icons.Default.EmojiEvents, contentDescription = "比赛结果") },
-                            label = {
-                                Text(
-                                    text = "赛果",
-                                    fontWeight = if (currentTab == 2) FontWeight.Bold else FontWeight.Normal,
-                                    fontSize = 12.sp
-                                )
-                            },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = themeColor,
-                                selectedTextColor = themeColor,
-                                indicatorColor = themeColor.copy(alpha = 0.15f),
-                                unselectedIconColor = F1TextMuted,
-                                unselectedTextColor = F1TextMuted
-                            )
-                        )
-                        NavigationBarItem(
-                            selected = currentTab == 3,
-                            onClick = { currentTab = 3 },
-                            icon = { Icon(Icons.Default.Groups, contentDescription = "车手与车队") },
-                            label = {
-                                Text(
-                                    text = "积分榜",
-                                    fontWeight = if (currentTab == 3) FontWeight.Bold else FontWeight.Normal,
-                                    fontSize = 12.sp
-                                )
-                            },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = themeColor,
-                                selectedTextColor = themeColor,
-                                indicatorColor = themeColor.copy(alpha = 0.15f),
-                                unselectedIconColor = F1TextMuted,
-                                unselectedTextColor = F1TextMuted
-                            )
-                        )
-                    }
-                },
-                containerColor = Color.Transparent
-            ) { innerPadding ->
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
-                ) {
-                    AmbientGlowBackground(themeColor = themeColor) {
                         when (currentTab) {
                             0 -> HomeScreen(
                                 scheduleViewModel = scheduleViewModel,

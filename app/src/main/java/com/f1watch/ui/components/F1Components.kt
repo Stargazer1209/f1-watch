@@ -552,7 +552,7 @@ fun CircuitMapCard(
 }
 
 /**
- * 全局暗夜流光背景：在界面顶部渲染主队主题色流光，由上向下自然漫反射渐变至纯黑
+ * 全局暗夜流光背景：在界面顶部渲染主队主题色流光，由屏幕最顶端向下自然漫反射渐变至纯黑
  */
 @Composable
 fun AmbientGlowBackground(
@@ -565,41 +565,27 @@ fun AmbientGlowBackground(
             .fillMaxSize()
             .background(Color(0xFF09090E))
     ) {
-        // Atmospheric Top-Down Seamless Canopy Glow
+        // Atmospheric Seamless Top-Down Ambient Canopy Glow
         androidx.compose.foundation.Canvas(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(480.dp)
+                .height(420.dp)
         ) {
-            val w = size.width
             val h = size.height
 
-            // 1. Broad Top-down Linear Ambient Falloff
+            // Smooth Multi-stop Ambient Falloff (No circular dome lines)
             drawRect(
                 brush = Brush.verticalGradient(
                     colors = listOf(
-                        themeColor.copy(alpha = 0.45f),
-                        themeColor.copy(alpha = 0.20f),
-                        themeColor.copy(alpha = 0.06f),
-                        themeColor.copy(alpha = 0.015f),
+                        themeColor.copy(alpha = 0.38f),
+                        themeColor.copy(alpha = 0.22f),
+                        themeColor.copy(alpha = 0.10f),
+                        themeColor.copy(alpha = 0.035f),
+                        themeColor.copy(alpha = 0.008f),
                         Color.Transparent
                     ),
                     startY = 0f,
-                    endY = h * 0.95f
-                )
-            )
-
-            // 2. Diffused Top-Center Radial Dome (Centered at top edge y=0)
-            drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(
-                        themeColor.copy(alpha = 0.35f),
-                        themeColor.copy(alpha = 0.12f),
-                        themeColor.copy(alpha = 0.02f),
-                        Color.Transparent
-                    ),
-                    center = androidx.compose.ui.geometry.Offset(w * 0.5f, 0f),
-                    radius = w * 0.90f
+                    endY = h
                 )
             )
         }

@@ -3,6 +3,8 @@ package com.f1watch.ui.home
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -15,6 +17,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -47,15 +50,21 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.layout.ContentScale
 import coil.compose.SubcomposeAsyncImage
 import coil.compose.SubcomposeAsyncImageContent
 import coil.compose.AsyncImagePainter
@@ -171,7 +180,14 @@ fun HeroNextRaceShowcase(
             .fillMaxWidth()
             .padding(horizontal = 20.dp, vertical = 6.dp)
     ) {
-        // --- 1. 上方赛事信息栏 (1~2 行精致排布) ---
+        // 1. 最上方浅色细线分割 (界定 Hero 区域顶端)
+        HorizontalDivider(
+            color = Color(0xFF222234),
+            thickness = 0.8.dp,
+            modifier = Modifier.padding(bottom = 12.dp)
+        )
+
+        // --- 1. 赛事信息栏 (1~2 行精致排布) ---
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -209,58 +225,16 @@ fun HeroNextRaceShowcase(
             modifier = Modifier.padding(top = 2.dp)
         )
 
-        // 上方浅色细线分割
-        HorizontalDivider(
-            color = Color(0xFF222234),
-            thickness = 0.8.dp,
-            modifier = Modifier.padding(vertical = 12.dp)
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // --- 2. 中央视觉核心：破框悬浮·金属拉丝光泽与 3D 立体铸模赛道图 ---
+        MetallicCircuitVisualizer(
+            mapUrl = mapUrl,
+            circuitName = race.circuit.circuitName,
+            localizedName = localizedCircuitName
         )
 
-        // --- 2. 中央视觉核心：破框悬浮·金属质感与立体微俯视赛道图 ---
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(190.dp)
-                .padding(horizontal = 16.dp, vertical = 4.dp)
-                .graphicsLayer {
-                    rotationX = 12f
-                    cameraDistance = 16f * density
-                },
-            contentAlignment = Alignment.Center
-        ) {
-            SubcomposeAsyncImage(
-                model = mapUrl,
-                contentDescription = race.circuit.circuitName,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = androidx.compose.ui.layout.ContentScale.Fit
-            ) {
-                val state = painter.state
-                if (state is AsyncImagePainter.State.Success) {
-                    SubcomposeAsyncImageContent()
-                } else {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Text(text = "🏁", fontSize = 32.sp)
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            text = localizedCircuitName,
-                            color = F1TextSecondary,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
-            }
-        }
-
-        // 中间浅色细线分割
-        HorizontalDivider(
-            color = Color(0xFF222234),
-            thickness = 0.8.dp,
-            modifier = Modifier.padding(vertical = 12.dp)
-        )
+        Spacer(modifier = Modifier.height(12.dp))
 
         // --- 3. 下方倒计时与操作区 (机械翻牌式倒计时) ---
         Column(
@@ -272,7 +246,7 @@ fun HeroNextRaceShowcase(
                 color = F1TextSecondary,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(bottom = 6.dp)
+                modifier = Modifier.padding(bottom = 8.dp)
             )
 
             // 机械翻牌式倒计时板 (Split-Flap)
@@ -548,6 +522,112 @@ fun QuickMenuTile(
                 tint = F1TextMuted,
                 modifier = Modifier.size(18.dp)
             )
+        }
+    }
+}
+
+/**
+ * 赛道图像视觉增强引擎：在 SVG 矢量线条之上融合 3D 铸模立体厚度与 45° 亮银铬/钛金属对角拉丝光泽
+ */
+@Composable
+fun MetallicCircuitVisualizer(
+    mapUrl: String,
+    circuitName: String,
+    localizedName: String,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(205.dp)
+            .padding(horizontal = 16.dp, vertical = 2.dp)
+            .graphicsLayer {
+                rotationX = 14f
+                cameraDistance = 18f * density
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        // 1. 底层：深色立体铸模阴影 (Drop Shadow Layer)
+        SubcomposeAsyncImage(
+            model = mapUrl,
+            contentDescription = null,
+            modifier = Modifier
+                .fillMaxSize()
+                .offset(x = 0.dp, y = 5.dp)
+                .alpha(0.65f),
+            contentScale = ContentScale.Fit,
+            colorFilter = ColorFilter.tint(Color(0xFF04040A))
+        ) {
+            val state = painter.state
+            if (state is AsyncImagePainter.State.Success) {
+                SubcomposeAsyncImageContent()
+            }
+        }
+
+        // 2. 中层：金属侧面倒角棱线 (Gunmetal Chamfer Bevel Layer)
+        SubcomposeAsyncImage(
+            model = mapUrl,
+            contentDescription = null,
+            modifier = Modifier
+                .fillMaxSize()
+                .offset(x = 0.dp, y = 2.dp)
+                .alpha(0.85f),
+            contentScale = ContentScale.Fit,
+            colorFilter = ColorFilter.tint(Color(0xFF343E4E))
+        ) {
+            val state = painter.state
+            if (state is AsyncImagePainter.State.Success) {
+                SubcomposeAsyncImageContent()
+            }
+        }
+
+        // 3. 顶层：赛道表面与对角金属拉丝光泽 (Main Brushed Metallic Chrome Track)
+        SubcomposeAsyncImage(
+            model = mapUrl,
+            contentDescription = circuitName,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Fit
+        ) {
+            val state = painter.state
+            if (state is AsyncImagePainter.State.Success) {
+                SubcomposeAsyncImageContent(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
+                        .drawWithContent {
+                            drawContent()
+                            drawRect(
+                                brush = Brush.linearGradient(
+                                    colors = listOf(
+                                        Color(0xFFFFFFFF), // 纯白强反光
+                                        Color(0xFFE2E8F0), // 铬银
+                                        Color(0xFF8E9BAE), // 钛灰
+                                        Color(0xFFFFFFFF), // 镜面高光
+                                        Color(0xFF6B788C), // 深金属阴影
+                                        Color(0xFFE2E8F0)  // 边缘反光
+                                    ),
+                                    start = androidx.compose.ui.geometry.Offset(0f, 0f),
+                                    end = androidx.compose.ui.geometry.Offset(size.width * 0.85f, size.height * 0.95f)
+                                ),
+                                blendMode = BlendMode.SrcIn
+                            )
+                        }
+                )
+            } else if (state is AsyncImagePainter.State.Error) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(text = "🏁", fontSize = 32.sp)
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = localizedName,
+                        color = F1TextSecondary,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
         }
     }
 }
