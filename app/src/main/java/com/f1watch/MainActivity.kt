@@ -50,6 +50,11 @@ import com.f1watch.ui.theme.F1Red
 import com.f1watch.ui.theme.F1TextMuted
 import com.f1watch.ui.theme.F1WatchTheme
 
+import androidx.compose.material.icons.filled.Home
+import com.f1watch.ui.home.HomeScreen
+import com.f1watch.ui.components.AmbientGlowBackground
+import com.f1watch.ui.theme.TeamColors
+
 class MainActivity : ComponentActivity() {
 
     private val scheduleViewModel: ScheduleViewModel by viewModels()
@@ -86,7 +91,10 @@ fun MainAppContainer(
     var currentTab by remember { mutableIntStateOf(0) }
 
     val scheduleState by scheduleViewModel.uiState.collectAsState()
-    val tabTitles = listOf("2026 赛历", "比赛结果", "车手与车队榜")
+    val currentThemeKey by preferencesManager.widgetThemeFlow.collectAsState(initial = "f1_red")
+    val themeColor = remember(currentThemeKey) { TeamColors.getColor(currentThemeKey) }
+
+    val tabTitles = listOf("围场大本营", "2026 赛历", "比赛结果", "车手与车队榜")
 
     BackHandler(enabled = isSettingsOpen) {
         isSettingsOpen = false
@@ -124,18 +132,18 @@ fun MainAppContainer(
                         NavigationBarItem(
                             selected = currentTab == 0,
                             onClick = { currentTab = 0 },
-                            icon = { Icon(Icons.Default.CalendarMonth, contentDescription = "赛历") },
+                            icon = { Icon(Icons.Default.Home, contentDescription = "首页大本营") },
                             label = {
                                 Text(
-                                    text = "赛历",
+                                    text = "首页",
                                     fontWeight = if (currentTab == 0) FontWeight.Bold else FontWeight.Normal,
                                     fontSize = 12.sp
                                 )
                             },
                             colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = F1Red,
-                                selectedTextColor = F1Red,
-                                indicatorColor = F1Red.copy(alpha = 0.15f),
+                                selectedIconColor = themeColor,
+                                selectedTextColor = themeColor,
+                                indicatorColor = themeColor.copy(alpha = 0.15f),
                                 unselectedIconColor = F1TextMuted,
                                 unselectedTextColor = F1TextMuted
                             )
@@ -143,18 +151,18 @@ fun MainAppContainer(
                         NavigationBarItem(
                             selected = currentTab == 1,
                             onClick = { currentTab = 1 },
-                            icon = { Icon(Icons.Default.EmojiEvents, contentDescription = "比赛结果") },
+                            icon = { Icon(Icons.Default.CalendarMonth, contentDescription = "赛历") },
                             label = {
                                 Text(
-                                    text = "赛果",
+                                    text = "赛历",
                                     fontWeight = if (currentTab == 1) FontWeight.Bold else FontWeight.Normal,
                                     fontSize = 12.sp
                                 )
                             },
                             colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = F1Red,
-                                selectedTextColor = F1Red,
-                                indicatorColor = F1Red.copy(alpha = 0.15f),
+                                selectedIconColor = themeColor,
+                                selectedTextColor = themeColor,
+                                indicatorColor = themeColor.copy(alpha = 0.15f),
                                 unselectedIconColor = F1TextMuted,
                                 unselectedTextColor = F1TextMuted
                             )
@@ -162,18 +170,37 @@ fun MainAppContainer(
                         NavigationBarItem(
                             selected = currentTab == 2,
                             onClick = { currentTab = 2 },
-                            icon = { Icon(Icons.Default.Groups, contentDescription = "车手与车队") },
+                            icon = { Icon(Icons.Default.EmojiEvents, contentDescription = "比赛结果") },
                             label = {
                                 Text(
-                                    text = "积分榜",
+                                    text = "赛果",
                                     fontWeight = if (currentTab == 2) FontWeight.Bold else FontWeight.Normal,
                                     fontSize = 12.sp
                                 )
                             },
                             colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = F1Red,
-                                selectedTextColor = F1Red,
-                                indicatorColor = F1Red.copy(alpha = 0.15f),
+                                selectedIconColor = themeColor,
+                                selectedTextColor = themeColor,
+                                indicatorColor = themeColor.copy(alpha = 0.15f),
+                                unselectedIconColor = F1TextMuted,
+                                unselectedTextColor = F1TextMuted
+                            )
+                        )
+                        NavigationBarItem(
+                            selected = currentTab == 3,
+                            onClick = { currentTab = 3 },
+                            icon = { Icon(Icons.Default.Groups, contentDescription = "车手与车队") },
+                            label = {
+                                Text(
+                                    text = "积分榜",
+                                    fontWeight = if (currentTab == 3) FontWeight.Bold else FontWeight.Normal,
+                                    fontSize = 12.sp
+                                )
+                            },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = themeColor,
+                                selectedTextColor = themeColor,
+                                indicatorColor = themeColor.copy(alpha = 0.15f),
                                 unselectedIconColor = F1TextMuted,
                                 unselectedTextColor = F1TextMuted
                             )
@@ -186,19 +213,25 @@ fun MainAppContainer(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(innerPadding)
-                        .background(F1Dark)
                 ) {
-                    when (currentTab) {
-                        0 -> ScheduleScreen(
-                            viewModel = scheduleViewModel,
-                            onSelectRaceDetail = { /* Handled via expandable cards */ }
-                        )
-                        1 -> ResultsScreen(
-                            viewModel = resultsViewModel
-                        )
-                        2 -> StandingsScreen(
-                            viewModel = standingsViewModel
-                        )
+                    AmbientGlowBackground(themeColor = themeColor) {
+                        when (currentTab) {
+                            0 -> HomeScreen(
+                                scheduleViewModel = scheduleViewModel,
+                                themeColor = themeColor,
+                                onNavigateToTab = { currentTab = it }
+                            )
+                            1 -> ScheduleScreen(
+                                viewModel = scheduleViewModel,
+                                onSelectRaceDetail = { /* Handled via expandable cards */ }
+                            )
+                            2 -> ResultsScreen(
+                                viewModel = resultsViewModel
+                            )
+                            3 -> StandingsScreen(
+                                viewModel = standingsViewModel
+                            )
+                        }
                     }
                 }
             }

@@ -559,3 +559,141 @@ fun CircuitMapCard(
         }
     }
 }
+
+/**
+ * 全局暗夜流光背景：在界面顶部渲染柔和的车队主题色径向渐变，打造赛道车房氛围感
+ */
+@Composable
+fun AmbientGlowBackground(
+    themeColor: Color,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(F1Dark)
+    ) {
+        // Top Ambient Radial Glow
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(360.dp)
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            themeColor.copy(alpha = 0.16f),
+                            themeColor.copy(alpha = 0.05f),
+                            Color.Transparent
+                        )
+                    )
+                )
+        )
+
+        content()
+    }
+}
+
+/**
+ * F1 官方记分板分块电子倒计时
+ */
+@Composable
+fun F1TimingCountdownBoard(
+    countdown: CountdownResult,
+    themeColor: Color,
+    modifier: Modifier = Modifier
+) {
+    if (countdown.isLive) {
+        Row(
+            modifier = modifier
+                .clip(RoundedCornerShape(10.dp))
+                .background(F1GreenLive.copy(alpha = 0.15f))
+                .border(1.dp, F1GreenLive, RoundedCornerShape(10.dp))
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(10.dp)
+                    .clip(CircleShape)
+                    .background(F1GreenLive)
+            )
+            Spacer(modifier = Modifier.width(10.dp))
+            Text(
+                text = "🟢 ${countdown.targetSessionName} 正在进行中 (LIVE)",
+                color = F1TextWhite,
+                fontWeight = FontWeight.Black,
+                fontSize = 13.sp
+            )
+        }
+    } else {
+        Row(
+            modifier = modifier,
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            TimingDigitBlock(value = String.format("%02d", countdown.days), label = "天", themeColor = themeColor)
+            Text(
+                text = ":",
+                color = F1TextMuted,
+                fontWeight = FontWeight.Black,
+                fontSize = 18.sp,
+                modifier = Modifier.padding(start = 4.dp, end = 4.dp, bottom = 14.dp)
+            )
+            TimingDigitBlock(value = String.format("%02d", countdown.hours), label = "时", themeColor = themeColor)
+            Text(
+                text = ":",
+                color = F1TextMuted,
+                fontWeight = FontWeight.Black,
+                fontSize = 18.sp,
+                modifier = Modifier.padding(start = 4.dp, end = 4.dp, bottom = 14.dp)
+            )
+            TimingDigitBlock(value = String.format("%02d", countdown.minutes), label = "分", themeColor = themeColor)
+            Text(
+                text = ":",
+                color = F1TextMuted,
+                fontWeight = FontWeight.Black,
+                fontSize = 18.sp,
+                modifier = Modifier.padding(start = 4.dp, end = 4.dp, bottom = 14.dp)
+            )
+            TimingDigitBlock(value = String.format("%02d", countdown.seconds), label = "秒", themeColor = themeColor)
+        }
+    }
+}
+
+@Composable
+fun TimingDigitBlock(
+    value: String,
+    label: String,
+    themeColor: Color
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(
+            modifier = Modifier
+                .width(48.dp)
+                .height(44.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(Color(0xFF14141E))
+                .border(1.dp, Color(0xFF282838), RoundedCornerShape(8.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = value,
+                color = F1TextWhite,
+                fontWeight = FontWeight.Black,
+                fontSize = 19.sp,
+                letterSpacing = 0.5.sp
+            )
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = label,
+            color = F1TextSecondary,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}

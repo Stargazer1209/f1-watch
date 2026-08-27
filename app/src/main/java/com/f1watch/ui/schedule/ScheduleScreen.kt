@@ -92,26 +92,6 @@ fun ScheduleScreen(
             LazyColumn(
                 modifier = Modifier.fillMaxSize()
             ) {
-                // Next Race Hero Card
-                state.nextRace?.let { next ->
-                    item {
-                        Text(
-                            text = "即将到来 / 下场大奖赛",
-                            color = F1TextSecondary,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp,
-                            modifier = Modifier.padding(start = 16.dp, top = 12.dp, bottom = 4.dp)
-                        )
-                        HeroNextRaceCard(
-                            race = next,
-                            countdown = state.countdown,
-                            isExpanded = state.isHeroExpanded,
-                            onToggleExpand = { viewModel.toggleHeroExpand() },
-                            onSyncCalendar = { viewModel.syncRaceToCalendar(next) }
-                        )
-                    }
-                }
-
                 // Season Full Schedule Header
                 item {
                     Row(
