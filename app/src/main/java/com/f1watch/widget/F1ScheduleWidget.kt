@@ -206,7 +206,7 @@ fun ScheduleWidgetContent(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = "🏎️",
+                                text = race?.circuit?.flagEmoji ?: "🏁",
                                 style = TextStyle(fontSize = 20.sp)
                             )
                         }

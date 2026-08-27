@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Leaderboard
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -417,9 +418,11 @@ fun EmptyStandingsNotice(title: String) {
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = "🏎️",
-                fontSize = 36.sp
+            Icon(
+                imageVector = Icons.Default.Leaderboard,
+                contentDescription = null,
+                tint = F1TextMuted,
+                modifier = Modifier.size(36.dp)
             )
             Spacer(modifier = Modifier.height(12.dp))
             Text(

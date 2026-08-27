@@ -486,7 +486,7 @@ fun SettingsScreen(
                                 .border(1.dp, F1GreenLive, RoundedCornerShape(12.dp))
                                 .padding(horizontal = 8.dp, vertical = 2.dp)
                         ) {
-                            Text(text = "🟢 畅通", color = F1GreenLive, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                            Text(text = "畅通", color = F1GreenLive, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                         }
                     }
 

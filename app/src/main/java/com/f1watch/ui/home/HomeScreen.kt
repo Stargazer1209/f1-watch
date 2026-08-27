@@ -209,21 +209,28 @@ fun HeroNextRaceShowcase(
 
         Spacer(modifier = Modifier.height(6.dp))
 
-        // Grand Prix Title & Location
-        Text(
-            text = localizedRaceName,
-            color = F1TextWhite,
-            fontWeight = FontWeight.Black,
-            fontSize = 24.sp,
-            letterSpacing = (-0.5).sp
-        )
-        Text(
-            text = "📍 $localizedCircuitName · $localizedLocality",
-            color = F1TextSecondary,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier.padding(top = 2.dp)
-        )
+        // Grand Prix Title & Circuit Location on the Same Row
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.Bottom
+        ) {
+            Text(
+                text = localizedRaceName,
+                color = F1TextWhite,
+                fontWeight = FontWeight.Black,
+                fontSize = 22.sp,
+                letterSpacing = (-0.5).sp
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "$localizedCircuitName · $localizedLocality",
+                color = F1TextSecondary,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.padding(bottom = 2.dp),
+                maxLines = 1
+            )
+        }
 
         Spacer(modifier = Modifier.height(10.dp))
 
@@ -241,14 +248,6 @@ fun HeroNextRaceShowcase(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = if (countdown.isLive) "🟢 比赛进行中 (LIVE)" else "距离 ${countdown.targetSessionName} 倒计时",
-                color = F1TextSecondary,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-
             // 机械翻牌式倒计时板 (Split-Flap)
             F1TimingCountdownBoard(
                 countdown = countdown,
@@ -256,38 +255,26 @@ fun HeroNextRaceShowcase(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
-            // Actions Row: Add to Calendar & Expand Timetable Toggle
+            // Actions Row: Target Session Countdown Label (Left) & Expand Timetable Toggle (Right)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                OutlinedButton(
-                    onClick = onSyncCalendar,
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = F1TextWhite),
-                    border = ButtonDefaults.outlinedButtonBorder.copy(
-                        brush = Brush.horizontalGradient(listOf(F1CardBorder, F1CardBorder))
-                    ),
-                    shape = RoundedCornerShape(8.dp),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.CalendarMonth,
-                        contentDescription = "加日历",
-                        tint = themeColor,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(text = "一键加日历", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                }
+                Text(
+                    text = if (countdown.isLive) "比赛进行中 (LIVE)" else "${countdown.targetSessionName}倒计时",
+                    color = if (countdown.isLive) F1GreenLive else F1TextSecondary,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
 
                 Row(
                     modifier = Modifier
                         .clip(RoundedCornerShape(8.dp))
                         .clickable { onToggleExpand() }
-                        .padding(horizontal = 8.dp, vertical = 6.dp),
+                        .padding(horizontal = 6.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
@@ -309,16 +296,42 @@ fun HeroNextRaceShowcase(
 
         // Expandable Sessions List
         AnimatedVisibility(visible = isExpanded) {
-            Column(modifier = Modifier.padding(top = 12.dp)) {
+            Column(modifier = Modifier.padding(top = 10.dp)) {
                 HorizontalDivider(color = Color(0xFF222234), thickness = 0.5.dp)
                 Spacer(modifier = Modifier.height(10.dp))
 
-                Text(
-                    text = "本站完整周末时间表 (已转为本地时间)",
-                    color = F1TextSecondary,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "本站赛表（本地时间）",
+                        color = F1TextSecondary,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    OutlinedButton(
+                        onClick = onSyncCalendar,
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = F1TextWhite),
+                        border = ButtonDefaults.outlinedButtonBorder.copy(
+                            brush = Brush.horizontalGradient(listOf(F1CardBorder, F1CardBorder))
+                        ),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                        modifier = Modifier.height(28.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CalendarMonth,
+                            contentDescription = "加日历",
+                            tint = themeColor,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(text = "加日历", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
                 Spacer(modifier = Modifier.height(8.dp))
 
                 race.getAllSessions().forEach { session ->

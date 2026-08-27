@@ -78,7 +78,7 @@ object CalendarSyncManager {
                 val values = ContentValues().apply {
                     put(CalendarContract.Events.DTSTART, startMillis)
                     put(CalendarContract.Events.DTEND, endMillis)
-                    put(CalendarContract.Events.TITLE, "🏎️ F1: ${race.raceName} - ${session.shortName}")
+                    put(CalendarContract.Events.TITLE, "F1: ${race.raceName} - ${session.shortName}")
                     put(CalendarContract.Events.DESCRIPTION, "F1 2026 Round ${race.round}: ${race.raceName}\n${session.name}\n赛道: ${race.circuit.circuitName}")
                     put(CalendarContract.Events.EVENT_LOCATION, "${race.circuit.circuitName}, ${race.circuit.country}")
                     put(CalendarContract.Events.CALENDAR_ID, calendarId)

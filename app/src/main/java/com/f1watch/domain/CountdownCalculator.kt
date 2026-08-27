@@ -39,7 +39,7 @@ object CountdownCalculator {
                 isLive = true,
                 targetSessionName = liveSession.name,
                 formattedCompact = "LIVE 进行中",
-                formattedLong = "${liveSession.name} 正在进行中 🟢"
+                formattedLong = "${liveSession.name} 正在进行中 (LIVE)"
             )
         }
 

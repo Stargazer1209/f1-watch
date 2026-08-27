@@ -101,7 +101,7 @@ fun SessionStatusBadge(status: SessionStatus) {
         SessionStatus.LIVE -> Triple(
             F1GreenLive.copy(alpha = 0.2f),
             F1GreenLive,
-            "🟢 LIVE 进行中"
+            "LIVE 进行中"
         )
         SessionStatus.COMPLETED -> Triple(
             F1TextMuted.copy(alpha = 0.2f),
@@ -180,7 +180,7 @@ fun HeroNextRaceCard(
             )
 
             Text(
-                text = "📍 ${com.f1watch.util.F1Localization.getCircuitName(race.circuit.circuitName)} · ${com.f1watch.util.F1Localization.getLocality(race.circuit.locality)}",
+                text = "${com.f1watch.util.F1Localization.getCircuitName(race.circuit.circuitName)} · ${com.f1watch.util.F1Localization.getLocality(race.circuit.locality)}",
                 color = F1TextSecondary,
                 fontSize = 12.sp
             )
@@ -534,7 +534,7 @@ fun CircuitMapCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "🏁 ${com.f1watch.util.F1Localization.getCircuitName(circuitName)}",
+                text = com.f1watch.util.F1Localization.getCircuitName(circuitName),
                 color = F1TextWhite,
                 fontWeight = FontWeight.Bold,
                 fontSize = 11.sp
@@ -621,7 +621,7 @@ fun F1TimingCountdownBoard(
             )
             Spacer(modifier = Modifier.width(10.dp))
             Text(
-                text = "🟢 ${countdown.targetSessionName} 正在进行中 (LIVE)",
+                text = "${countdown.targetSessionName} 正在进行中 (LIVE)",
                 color = F1TextWhite,
                 fontWeight = FontWeight.Black,
                 fontSize = 13.sp

@@ -178,7 +178,7 @@ fun ResultsScreen(
                                     fontSize = 18.sp
                                 )
                                 Text(
-                                    text = "📍 ${com.f1watch.util.F1Localization.getCircuitName(race.circuit.circuitName)} · ${race.date}",
+                                    text = "${com.f1watch.util.F1Localization.getCircuitName(race.circuit.circuitName)} · ${race.date}",
                                     color = F1TextSecondary,
                                     fontSize = 12.sp
                                 )
@@ -296,7 +296,7 @@ fun PodiumSection(p1: RaceResult, p2: RaceResult, p3: RaceResult) {
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Text(
-                text = "🏆 领奖台前三名",
+                text = "领奖台前三名",
                 color = F1TextWhite,
                 fontWeight = FontWeight.Black,
                 fontSize = 14.sp

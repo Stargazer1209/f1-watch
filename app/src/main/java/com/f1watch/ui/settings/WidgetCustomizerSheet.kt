@@ -81,7 +81,7 @@ fun WidgetCustomizerSheet(
                 .verticalScroll(rememberScrollState())
         ) {
             Text(
-                text = "🎨 桌面小组件个性化定制",
+                text = "桌面小组件个性化定制",
                 fontWeight = FontWeight.Black,
                 color = F1TextWhite,
                 fontSize = 18.sp
