@@ -50,6 +50,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -108,9 +109,7 @@ fun HomeScreen(
     }
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(F1Dark)
+        modifier = Modifier.fillMaxSize()
     ) {
         if (state.isLoading && state.races.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -120,7 +119,7 @@ fun HomeScreen(
             LazyColumn(
                 modifier = Modifier.fillMaxSize()
             ) {
-                // 1. Hero Next Grand Prix Showcase Card
+                // 1. Hero Next Grand Prix Showcase
                 item {
                     state.nextRace?.let { nextRace ->
                         HeroNextRaceShowcase(
@@ -134,9 +133,9 @@ fun HomeScreen(
                     }
                 }
 
-                // 2. Quick Bento Hub (大本营快捷入口)
+                // 2. 快捷菜单 (3 项功能直达)
                 item {
-                    PaddockBentoHub(
+                    QuickMenuHub(
                         themeColor = themeColor,
                         onNavigateToTab = onNavigateToTab
                     )
@@ -151,7 +150,7 @@ fun HomeScreen(
 }
 
 /**
- * 破框释放、高视觉张力的大奖赛焦点看板
+ * 破框释放、高视觉张力的大奖赛焦点展台 (上下细线分割，全通透悬浮)
  */
 @Composable
 fun HeroNextRaceShowcase(
@@ -167,116 +166,116 @@ fun HeroNextRaceShowcase(
     val localizedCircuitName = F1Localization.getCircuitName(race.circuit.circuitName)
     val localizedLocality = F1Localization.getLocality(race.circuit.locality)
 
-    Card(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = F1CardBg),
-        border = CardDefaults.outlinedCardBorder()
+            .padding(horizontal = 20.dp, vertical = 6.dp)
     ) {
-        Column(
+        // --- 1. 上方赛事信息栏 (1~2 行精致排布) ---
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(text = race.circuit.flagEmoji, fontSize = 20.sp)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "ROUND ${race.round}".uppercase(),
+                    color = themeColor,
+                    fontWeight = FontWeight.Black,
+                    fontSize = 12.sp,
+                    letterSpacing = 1.sp
+                )
+            }
+            SessionStatusBadge(status = if (countdown.isLive) SessionStatus.LIVE else SessionStatus.UPCOMING)
+        }
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        // Grand Prix Title & Location
+        Text(
+            text = localizedRaceName,
+            color = F1TextWhite,
+            fontWeight = FontWeight.Black,
+            fontSize = 24.sp,
+            letterSpacing = (-0.5).sp
+        )
+        Text(
+            text = "📍 $localizedCircuitName · $localizedLocality",
+            color = F1TextSecondary,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.padding(top = 2.dp)
+        )
+
+        // 上方浅色细线分割
+        HorizontalDivider(
+            color = Color(0xFF222234),
+            thickness = 0.8.dp,
+            modifier = Modifier.padding(vertical = 12.dp)
+        )
+
+        // --- 2. 中央视觉核心：破框悬浮·金属质感与立体微俯视赛道图 ---
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(18.dp)
+                .height(190.dp)
+                .padding(horizontal = 16.dp, vertical = 4.dp)
+                .graphicsLayer {
+                    rotationX = 12f
+                    cameraDistance = 16f * density
+                },
+            contentAlignment = Alignment.Center
         ) {
-            // Header: Flag + Round + Status
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            SubcomposeAsyncImage(
+                model = mapUrl,
+                contentDescription = race.circuit.circuitName,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = androidx.compose.ui.layout.ContentScale.Fit
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(text = race.circuit.flagEmoji, fontSize = 20.sp)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "ROUND ${race.round}".uppercase(),
-                        color = themeColor,
-                        fontWeight = FontWeight.Black,
-                        fontSize = 12.sp,
-                        letterSpacing = 1.sp
-                    )
-                }
-                SessionStatusBadge(status = if (countdown.isLive) SessionStatus.LIVE else SessionStatus.UPCOMING)
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Grand Prix Title
-            Text(
-                text = localizedRaceName,
-                color = F1TextWhite,
-                fontWeight = FontWeight.Black,
-                fontSize = 24.sp,
-                letterSpacing = (-0.5).sp
-            )
-
-            // Circuit Location Subtitle
-            Text(
-                text = "📍 $localizedCircuitName · $localizedLocality",
-                color = F1TextSecondary,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.padding(top = 2.dp)
-            )
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            // 破框释放：纯白大尺寸赛道轮廓艺术展台
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(2.1f)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(Color(0xFF0D0D14), Color(0xFF13131D))
+                val state = painter.state
+                if (state is AsyncImagePainter.State.Success) {
+                    SubcomposeAsyncImageContent()
+                } else {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(text = "🏁", fontSize = 32.sp)
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = localizedCircuitName,
+                            color = F1TextSecondary,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium
                         )
-                    )
-                    .border(1.dp, Color(0xFF222230), RoundedCornerShape(14.dp))
-                    .padding(12.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                SubcomposeAsyncImage(
-                    model = mapUrl,
-                    contentDescription = race.circuit.circuitName,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = androidx.compose.ui.layout.ContentScale.Fit
-                ) {
-                    val state = painter.state
-                    if (state is AsyncImagePainter.State.Success) {
-                        SubcomposeAsyncImageContent()
-                    } else {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            Text(text = "🏁", fontSize = 28.sp)
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = localizedCircuitName,
-                                color = F1TextSecondary,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
                     }
                 }
             }
+        }
 
-            Spacer(modifier = Modifier.height(16.dp))
+        // 中间浅色细线分割
+        HorizontalDivider(
+            color = Color(0xFF222234),
+            thickness = 0.8.dp,
+            modifier = Modifier.padding(vertical = 12.dp)
+        )
 
-            // 目标阶段提示
+        // --- 3. 下方倒计时与操作区 (机械翻牌式倒计时) ---
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
             Text(
-                text = if (countdown.isLive) "比赛进行中" else "距离 ${countdown.targetSessionName} 倒计时",
+                text = if (countdown.isLive) "🟢 比赛进行中 (LIVE)" else "距离 ${countdown.targetSessionName} 倒计时",
                 color = F1TextSecondary,
                 fontSize = 11.sp,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(bottom = 6.dp)
             )
 
-            Spacer(modifier = Modifier.height(6.dp))
-
-            // F1 精密记分板分块电子倒计时
+            // 机械翻牌式倒计时板 (Split-Flap)
             F1TimingCountdownBoard(
                 countdown = countdown,
                 themeColor = themeColor,
@@ -332,95 +331,101 @@ fun HeroNextRaceShowcase(
                     )
                 }
             }
+        }
 
-            // Expandable Sessions List
-            AnimatedVisibility(visible = isExpanded) {
-                Column(modifier = Modifier.padding(top = 12.dp)) {
-                    HorizontalDivider(color = F1CardBorder, thickness = 0.5.dp)
-                    Spacer(modifier = Modifier.height(10.dp))
+        // Expandable Sessions List
+        AnimatedVisibility(visible = isExpanded) {
+            Column(modifier = Modifier.padding(top = 12.dp)) {
+                HorizontalDivider(color = Color(0xFF222234), thickness = 0.5.dp)
+                Spacer(modifier = Modifier.height(10.dp))
 
-                    Text(
-                        text = "本站完整周末时间表 (已转为本地时间)",
-                        color = F1TextSecondary,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "本站完整周末时间表 (已转为本地时间)",
+                    color = F1TextSecondary,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(8.dp))
 
-                    race.getAllSessions().forEach { session ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(F1CardSurface.copy(alpha = 0.7f))
-                                .padding(horizontal = 10.dp, vertical = 6.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(6.dp)
-                                        .clip(CircleShape)
-                                        .background(if (session.status == SessionStatus.LIVE) F1GreenLive else themeColor)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = F1Localization.getSessionName(session.name),
-                                    color = F1TextWhite,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                            }
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = session.sessionTime.formatLocalDayTime(),
-                                    color = F1TextWhite,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                SessionStatusBadge(status = session.status)
-                            }
+                race.getAllSessions().forEach { session ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(F1CardSurface.copy(alpha = 0.7f))
+                            .padding(horizontal = 10.dp, vertical = 6.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(6.dp)
+                                    .clip(CircleShape)
+                                    .background(if (session.status == SessionStatus.LIVE) F1GreenLive else themeColor)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = F1Localization.getSessionName(session.name),
+                                color = F1TextWhite,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
                         }
-                        Spacer(modifier = Modifier.height(6.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = session.sessionTime.formatLocalDayTime(),
+                                color = F1TextWhite,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            SessionStatusBadge(status = session.status)
+                        }
                     }
+                    Spacer(modifier = Modifier.height(6.dp))
                 }
             }
         }
+
+        // 底部浅色细线分割 (分隔开快捷菜单)
+        HorizontalDivider(
+            color = Color(0xFF222234),
+            thickness = 0.8.dp,
+            modifier = Modifier.padding(top = 16.dp, bottom = 12.dp)
+        )
     }
 }
 
 /**
- * 首页下方 Bento Box 快捷大本营导航矩阵
+ * 首页下方 3 项直达快捷菜单 (赛历 / 积分榜 / 赛果)
  */
 @Composable
-fun PaddockBentoHub(
+fun QuickMenuHub(
     themeColor: Color,
     onNavigateToTab: (Int) -> Unit
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp)
+            .padding(horizontal = 20.dp, vertical = 4.dp)
     ) {
         Text(
-            text = "快捷大本营 / PADDOCK HUB",
+            text = "快捷菜单",
             color = F1TextSecondary,
             fontWeight = FontWeight.Black,
             fontSize = 12.sp,
             letterSpacing = 1.sp,
-            modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+            modifier = Modifier.padding(start = 2.dp, bottom = 10.dp)
         )
 
+        // 上排 2 项：赛历 & 积分榜
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // Bento 1: 赛历全览
-            BentoNavTile(
-                title = "2026 赛历",
-                subtitle = "24站全赛季赛程",
+            QuickMenuTile(
+                title = "赛历",
                 badge = "CAL",
                 badgeColor = Color(0xFFE10600),
                 icon = Icons.Default.CalendarMonth,
@@ -428,10 +433,8 @@ fun PaddockBentoHub(
                 onClick = { onNavigateToTab(1) }
             )
 
-            // Bento 2: 积分榜
-            BentoNavTile(
-                title = "世界积分榜",
-                subtitle = "车手与车队排位",
+            QuickMenuTile(
+                title = "积分榜",
                 badge = "PTS",
                 badgeColor = Color(0xFF0090FF),
                 icon = Icons.Default.Groups,
@@ -442,7 +445,7 @@ fun PaddockBentoHub(
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // Bento 3: 比赛结果与领奖台
+        // 下排 1 项：分站赛果
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -462,7 +465,7 @@ fun PaddockBentoHub(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier
-                            .size(36.dp)
+                            .size(34.dp)
                             .clip(RoundedCornerShape(8.dp))
                             .background(Color(0xFF38EF7D).copy(alpha = 0.15f)),
                         contentAlignment = Alignment.Center
@@ -475,25 +478,18 @@ fun PaddockBentoHub(
                         )
                     }
                     Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                        Text(
-                            text = "最新分站赛果与领奖台",
-                            color = F1TextWhite,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp
-                        )
-                        Text(
-                            text = "正赛成绩、杆位与最快圈速速览",
-                            color = F1TextSecondary,
-                            fontSize = 11.sp
-                        )
-                    }
+                    Text(
+                        text = "赛果",
+                        color = F1TextWhite,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp
+                    )
                 }
                 Icon(
                     imageVector = Icons.Default.ChevronRight,
                     contentDescription = null,
                     tint = F1TextMuted,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(18.dp)
                 )
             }
         }
@@ -501,9 +497,8 @@ fun PaddockBentoHub(
 }
 
 @Composable
-fun BentoNavTile(
+fun QuickMenuTile(
     title: String,
-    subtitle: String,
     badge: String,
     badgeColor: Color,
     icon: ImageVector,
@@ -518,16 +513,14 @@ fun BentoNavTile(
         colors = CardDefaults.cardColors(containerColor = F1CardBg),
         border = CardDefaults.outlinedCardBorder()
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp)
+                .padding(horizontal = 14.dp, vertical = 14.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(6.dp))
@@ -541,26 +534,19 @@ fun BentoNavTile(
                         fontSize = 10.sp
                     )
                 }
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = F1TextMuted,
-                    modifier = Modifier.size(18.dp)
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = title,
+                    color = F1TextWhite,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp
                 )
             }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Text(
-                text = title,
-                color = F1TextWhite,
-                fontWeight = FontWeight.Bold,
-                fontSize = 14.sp
-            )
-            Text(
-                text = subtitle,
-                color = F1TextSecondary,
-                fontSize = 11.sp
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = F1TextMuted,
+                modifier = Modifier.size(18.dp)
             )
         }
     }

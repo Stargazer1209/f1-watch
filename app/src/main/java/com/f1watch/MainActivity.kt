@@ -31,6 +31,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -94,7 +95,7 @@ fun MainAppContainer(
     val currentThemeKey by preferencesManager.widgetThemeFlow.collectAsState(initial = "f1_red")
     val themeColor = remember(currentThemeKey) { TeamColors.getColor(currentThemeKey) }
 
-    val tabTitles = listOf("围场大本营", "2026 赛历", "比赛结果", "车手与车队榜")
+    val tabTitles = listOf("首页", "赛历", "赛果", "积分榜")
 
     BackHandler(enabled = isSettingsOpen) {
         isSettingsOpen = false
@@ -207,7 +208,7 @@ fun MainAppContainer(
                         )
                     }
                 },
-                containerColor = F1Dark
+                containerColor = Color.Transparent
             ) { innerPadding ->
                 Box(
                     modifier = Modifier

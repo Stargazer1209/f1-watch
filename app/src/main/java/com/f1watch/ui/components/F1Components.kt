@@ -71,22 +71,13 @@ fun F1TopBar(
 ) {
     TopAppBar(
         title = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(10.dp)
-                        .clip(CircleShape)
-                        .background(F1Red)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = title,
-                    fontWeight = FontWeight.Black,
-                    fontSize = 20.sp,
-                    color = F1TextWhite,
-                    letterSpacing = (-0.5).sp
-                )
-            }
+            Text(
+                text = title,
+                fontWeight = FontWeight.Black,
+                fontSize = 22.sp,
+                color = F1TextWhite,
+                letterSpacing = (-0.5).sp
+            )
         },
         actions = {
             IconButton(onClick = onOpenCustomizer) {
@@ -98,7 +89,7 @@ fun F1TopBar(
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = F1Dark,
+            containerColor = Color.Transparent,
             titleContentColor = F1TextWhite
         )
     )
@@ -561,7 +552,7 @@ fun CircuitMapCard(
 }
 
 /**
- * 全局暗夜流光背景：在界面顶部渲染柔和的车队主题色径向渐变，打造赛道车房氛围感
+ * 全局暗夜流光背景：在界面顶部渲染主队主题色流光，由上向下自然漫反射渐变至纯黑
  */
 @Composable
 fun AmbientGlowBackground(
@@ -572,30 +563,53 @@ fun AmbientGlowBackground(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(F1Dark)
+            .background(Color(0xFF09090E))
     ) {
-        // Top Ambient Radial Glow
-        Box(
+        // Atmospheric Top-Down Seamless Canopy Glow
+        androidx.compose.foundation.Canvas(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(360.dp)
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            themeColor.copy(alpha = 0.16f),
-                            themeColor.copy(alpha = 0.05f),
-                            Color.Transparent
-                        )
-                    )
+                .height(480.dp)
+        ) {
+            val w = size.width
+            val h = size.height
+
+            // 1. Broad Top-down Linear Ambient Falloff
+            drawRect(
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        themeColor.copy(alpha = 0.45f),
+                        themeColor.copy(alpha = 0.20f),
+                        themeColor.copy(alpha = 0.06f),
+                        themeColor.copy(alpha = 0.015f),
+                        Color.Transparent
+                    ),
+                    startY = 0f,
+                    endY = h * 0.95f
                 )
-        )
+            )
+
+            // 2. Diffused Top-Center Radial Dome (Centered at top edge y=0)
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        themeColor.copy(alpha = 0.35f),
+                        themeColor.copy(alpha = 0.12f),
+                        themeColor.copy(alpha = 0.02f),
+                        Color.Transparent
+                    ),
+                    center = androidx.compose.ui.geometry.Offset(w * 0.5f, 0f),
+                    radius = w * 0.90f
+                )
+            )
+        }
 
         content()
     }
 }
 
 /**
- * F1 官方记分板分块电子倒计时
+ * 机械翻牌式（Split-Flap）赛道精密倒计时
  */
 @Composable
 fun F1TimingCountdownBoard(
@@ -633,37 +647,40 @@ fun F1TimingCountdownBoard(
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            TimingDigitBlock(value = String.format("%02d", countdown.days), label = "天", themeColor = themeColor)
+            SplitFlapDigitBlock(value = String.format("%02d", countdown.days), label = "天", themeColor = themeColor)
             Text(
                 text = ":",
                 color = F1TextMuted,
                 fontWeight = FontWeight.Black,
                 fontSize = 18.sp,
-                modifier = Modifier.padding(start = 4.dp, end = 4.dp, bottom = 14.dp)
+                modifier = Modifier.padding(start = 5.dp, end = 5.dp, bottom = 16.dp)
             )
-            TimingDigitBlock(value = String.format("%02d", countdown.hours), label = "时", themeColor = themeColor)
+            SplitFlapDigitBlock(value = String.format("%02d", countdown.hours), label = "时", themeColor = themeColor)
             Text(
                 text = ":",
                 color = F1TextMuted,
                 fontWeight = FontWeight.Black,
                 fontSize = 18.sp,
-                modifier = Modifier.padding(start = 4.dp, end = 4.dp, bottom = 14.dp)
+                modifier = Modifier.padding(start = 5.dp, end = 5.dp, bottom = 16.dp)
             )
-            TimingDigitBlock(value = String.format("%02d", countdown.minutes), label = "分", themeColor = themeColor)
+            SplitFlapDigitBlock(value = String.format("%02d", countdown.minutes), label = "分", themeColor = themeColor)
             Text(
                 text = ":",
                 color = F1TextMuted,
                 fontWeight = FontWeight.Black,
                 fontSize = 18.sp,
-                modifier = Modifier.padding(start = 4.dp, end = 4.dp, bottom = 14.dp)
+                modifier = Modifier.padding(start = 5.dp, end = 5.dp, bottom = 16.dp)
             )
-            TimingDigitBlock(value = String.format("%02d", countdown.seconds), label = "秒", themeColor = themeColor)
+            SplitFlapDigitBlock(value = String.format("%02d", countdown.seconds), label = "秒", themeColor = themeColor)
         }
     }
 }
 
+/**
+ * 单个机械翻牌分块（Split-Flap Unit）
+ */
 @Composable
-fun TimingDigitBlock(
+fun SplitFlapDigitBlock(
     value: String,
     label: String,
     themeColor: Color
@@ -671,28 +688,83 @@ fun TimingDigitBlock(
     Column(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        // 机械翻牌外壳 (带细致的物理分片与受光阴影)
         Box(
             modifier = Modifier
-                .width(48.dp)
-                .height(44.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(Color(0xFF14141E))
-                .border(1.dp, Color(0xFF282838), RoundedCornerShape(8.dp)),
-            contentAlignment = Alignment.Center
+                .width(52.dp)
+                .height(48.dp)
+                .clip(RoundedCornerShape(6.dp))
+                .background(Color(0xFF101018))
+                .border(1.dp, Color(0xFF26263A), RoundedCornerShape(6.dp))
         ) {
+            // 上半片 (顶光微亮)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(24.dp)
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color(0xFF222232),
+                                Color(0xFF14141E)
+                            )
+                        )
+                    )
+            )
+            // 下半片 (内凹微暗)
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .height(24.dp)
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color(0xFF101016),
+                                Color(0xFF09090E)
+                            )
+                        )
+                    )
+            )
+
+            // 数字主体
             Text(
                 text = value,
                 color = F1TextWhite,
                 fontWeight = FontWeight.Black,
-                fontSize = 19.sp,
-                letterSpacing = 0.5.sp
+                fontSize = 21.sp,
+                letterSpacing = 0.5.sp,
+                modifier = Modifier.align(Alignment.Center)
+            )
+
+            // 中间机械折线裂缝 (Split Flap Hinge Line)
+            Box(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .fillMaxWidth()
+                    .height(1.2.dp)
+                    .background(Color(0xFF06060A))
+            )
+
+            // 左右两侧微型机械固定卡扣
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .size(width = 2.dp, height = 5.dp)
+                    .background(Color(0xFF42425A))
+            )
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .size(width = 2.dp, height = 5.dp)
+                    .background(Color(0xFF42425A))
             )
         }
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = label,
             color = F1TextSecondary,
-            fontSize = 10.sp,
+            fontSize = 11.sp,
             fontWeight = FontWeight.Bold
         )
     }

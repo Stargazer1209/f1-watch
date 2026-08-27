@@ -110,9 +110,7 @@ fun ResultsScreen(
     }
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(F1Dark)
+        modifier = Modifier.fillMaxSize()
     ) {
         // Round Selector
         LazyRow(

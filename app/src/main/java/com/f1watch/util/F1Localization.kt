@@ -11,7 +11,6 @@ object F1Localization {
         }
 
     fun getRaceName(raceName: String): String {
-        if (!isChinese) return raceName
         val lower = raceName.trim().lowercase()
         return when {
             "australian" in lower -> "澳大利亚大奖赛"
@@ -46,7 +45,6 @@ object F1Localization {
     }
 
     fun getCircuitName(circuitName: String): String {
-        if (!isChinese) return circuitName
         val lower = circuitName.trim().lowercase()
         return when {
             "albert park" in lower || "melbourne" in lower -> "阿尔伯特公园赛道"

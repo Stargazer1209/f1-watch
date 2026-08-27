@@ -82,14 +82,12 @@ fun StandingsScreen(
     }
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(F1Dark)
+        modifier = Modifier.fillMaxSize()
     ) {
         // Tab Row
         TabRow(
             selectedTabIndex = pagerState.currentPage,
-            containerColor = F1Dark,
+            containerColor = Color.Transparent,
             contentColor = F1TextWhite,
             indicator = { tabPositions ->
                 TabRowDefaults.SecondaryIndicator(

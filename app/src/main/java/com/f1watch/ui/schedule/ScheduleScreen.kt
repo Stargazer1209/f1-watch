@@ -80,9 +80,7 @@ fun ScheduleScreen(
     }
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(F1Dark)
+        modifier = Modifier.fillMaxSize()
     ) {
         if (state.isLoading && state.races.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
