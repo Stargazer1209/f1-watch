@@ -104,13 +104,29 @@ f1-watch/
 
 ---
 
-## 🚀 编译与安装说明 (完全隔离、零全局污染)
+## 🚀 编译与运行说明 (完全隔离、零全局污染)
 
-本项目已配置完全隔离的本地工具链环境，无需在全局安装 JDK 或修改系统环境变量。
+本项目支持全自动、完全隔离的本地工具链环境，无需在系统全局安装 JDK、Android SDK 或修改全局环境变量。
 
-### 1. 运行单元测试并编译 Debug APK
-在工程目录下执行以下 PowerShell 命令：
+### 1. 一键初始化本地隔离开发环境
+工程根目录下通过 `uv` 或 `python3` 执行：
 
+```bash
+# 自动探测操作系统 (Linux / Windows) 及本地代理，自动下载并配置本地 JDK 17 与 Android SDK 至 .tools/
+uv run python setup_env.py
+```
+
+### 2. 运行单元测试与编译 Debug APK
+
+**Linux / macOS (Bash)**:
+```bash
+export JAVA_HOME="$(pwd)/.tools/jdk"
+export ANDROID_HOME="$(pwd)/.tools/android-sdk"
+export PATH="$JAVA_HOME/bin:$PATH"
+./gradlew testDebugUnitTest assembleDebug
+```
+
+**Windows (PowerShell)**:
 ```powershell
 $env:JAVA_HOME = "$((Get-Item .).FullName)\.tools\jdk"
 $env:ANDROID_HOME = "$((Get-Item .).FullName)\.tools\android-sdk"
@@ -120,9 +136,14 @@ $env:ANDROID_HOME = "$((Get-Item .).FullName)\.tools\android-sdk"
 编译产物位于：
 `app/build/outputs/apk/debug/app-debug.apk`
 
-### 2. 安装至 Android 设备
-连接手机（开启 USB 调试）后执行：
+### 3. 安装至 Android / 小米澎湃OS 设备
 
+**Linux**:
+```bash
+./.tools/android-sdk/platform-tools/adb install -r app/build/outputs/apk/debug/app-debug.apk
+```
+
+**Windows (PowerShell)**:
 ```powershell
 & "$((Get-Item .).FullName)\.tools\android-sdk\platform-tools\adb.exe" install -r app\build\outputs\apk\debug\app-debug.apk
 ```
