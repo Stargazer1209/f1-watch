@@ -158,3 +158,9 @@ $env:ANDROID_HOME = "$((Get-Item .).FullName)\.tools\android-sdk"
 2. **在 App 内自定义主题配色**：
    - 打开 F1 Watch 应用 -> 点击右上角 ⚙️ 调色图标（或在底栏进入设置）；
    - 选择喜爱的车队主队配色，桌面小部件将实时同步更新。
+
+---
+
+## 📄 License
+
+Licensed under the [Apache License 2.0](LICENSE). Any redistribution or derivative work must preserve the copyright notice and [NOTICE](NOTICE) attribution to **Xiaokang Zhao (Stargazer1209)**.
